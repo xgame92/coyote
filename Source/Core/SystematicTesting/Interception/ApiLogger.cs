@@ -4,8 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
+using System.Xml.Serialization;
 
 namespace Microsoft.Coyote.SystematicTesting.Interception
 {
@@ -40,9 +39,8 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         }
 
         /// <summary>
-        /// Information about API invocations that can be serialized to a JSON file.
+        /// Information about API invocations that can be serialized to an XML file.
         /// </summary>
-        [DataContract]
         public class Info
         {
             private static readonly object SyncObject = new object();
@@ -50,19 +48,39 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             /// <summary>
             /// The name of the test.
             /// </summary>
-            [DataMember(Name = "Name", IsRequired = true)]
             public string Name { get; set; }
 
             /// <summary>
             /// The location of the test.
             /// </summary>
-            [DataMember(Name = "Location", IsRequired = true)]
             public string Location { get; set; }
+
+            /// <summary>
+            /// Map from APIs to their invocation frequency. This is a proxy
+            /// used for XML serialization.
+            /// </summary>
+            [XmlElement("APIs")]
+            public List<KeyValuePair<string, int>> APIsProxy
+            {
+                get
+                {
+                    return new List<KeyValuePair<string, int>>(this.APIs);
+                }
+
+                set
+                {
+                    this.APIs = new SortedDictionary<string, int>();
+                    foreach (var pair in value)
+                    {
+                        this.APIs[pair.Key] = pair.Value;
+                    }
+                }
+            }
 
             /// <summary>
             /// Map from APIs to their invocation frequency.
             /// </summary>
-            [DataMember(Name = "APIs", IsRequired = true)]
+            [XmlIgnore]
             public IDictionary<string, int> APIs { get; set; }
 
             /// <summary>
@@ -100,21 +118,21 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             }
 
             /// <summary>
-            /// Serializes to a JSON file.
+            /// Serializes to an XML file.
             /// </summary>
             internal void Save()
             {
                 lock (SyncObject)
                 {
                     using FileStream fs = new FileStream(this.FilePath, FileMode.OpenOrCreate, FileAccess.Write);
-                    var serializer = new DataContractJsonSerializer(typeof(Info));
-                    serializer.WriteObject(fs, this);
+                    var serializer = new XmlSerializer(typeof(Info));
+                    serializer.Serialize(fs, this);
                 }
             }
 
             private string GetLocation() => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            private string GetFilePath(string location, string name) => Path.Combine(location, $"{name}.api.json");
+            private string GetFilePath(string location, string name) => Path.Combine(location, $"{name}.api.xml");
         }
     }
 }
