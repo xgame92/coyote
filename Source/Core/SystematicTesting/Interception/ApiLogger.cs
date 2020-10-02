@@ -23,7 +23,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// Logs that the specified test started executing.
         /// </summary>
-        public static void LogNewTest(string name)
+        public static void LogTestStarted(string name)
         {
             var info = new Info(name);
             info.Save();
