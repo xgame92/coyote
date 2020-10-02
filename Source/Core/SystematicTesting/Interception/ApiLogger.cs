@@ -39,6 +39,22 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         }
 
         /// <summary>
+        /// Information about an API.
+        /// </summary>
+        public class API
+        {
+            /// <summary>
+            /// The name of the API.
+            /// </summary>
+            public string Name { get; set; }
+
+            /// <summary>
+            /// The frequency of the API invocation.
+            /// </summary>
+            public int Frequency { get; set; }
+        }
+
+        /// <summary>
         /// Information about API invocations that can be serialized to an XML file.
         /// </summary>
         public class Info
@@ -56,24 +72,24 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             public string Location { get; set; }
 
             /// <summary>
-            /// Map from APIs to their invocation frequency. This is a proxy
-            /// used for XML serialization.
+            /// List of invoked APIs.
             /// </summary>
             [XmlElement("APIs")]
-            public List<KeyValuePair<string, int>> APIsProxy
+            public List<API> APIsProxy
             {
                 get
                 {
-                    return new List<KeyValuePair<string, int>>(this.APIs);
-                }
-
-                set
-                {
-                    this.APIs = new SortedDictionary<string, int>();
-                    foreach (var pair in value)
+                    var list = new List<API>();
+                    foreach (var kvp in this.APIs)
                     {
-                        this.APIs[pair.Key] = pair.Value;
+                        list.Add(new API()
+                        {
+                            Name = kvp.Key,
+                            Frequency = kvp.Value
+                        });
                     }
+
+                    return list;
                 }
             }
 
