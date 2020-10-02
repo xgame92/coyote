@@ -106,7 +106,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             {
                 lock (SyncObject)
                 {
-                    using FileStream fs = new FileStream(this.FilePath, FileMode.Open, FileAccess.Write);
+                    using FileStream fs = new FileStream(this.FilePath, FileMode.OpenOrCreate, FileAccess.Write);
                     var serializer = new DataContractJsonSerializer(typeof(Info));
                     serializer.WriteObject(fs, this);
                 }
