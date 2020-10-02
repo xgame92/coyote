@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Coyote.IO;
+using Microsoft.Coyote.SystematicTesting.Interception;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
@@ -12,11 +13,6 @@ namespace Microsoft.Coyote.Rewriting
 {
     internal class ExceptionFilterTransform : AssemblyTransform
     {
-        /// <summary>
-        /// The type being transformed.
-        /// </summary>
-        private TypeDefinition TypeDef;
-
         /// <summary>
         /// Is part of an async state machine.
         /// </summary>
@@ -41,8 +37,8 @@ namespace Microsoft.Coyote.Rewriting
         /// <inheritdoc/>
         internal override void VisitType(TypeDefinition typeDef)
         {
-            this.TypeDef = typeDef;
-            this.IsStateMachine = (from i in typeDef.Interfaces where i.InterfaceType.FullName == "System.Runtime.CompilerServices.IAsyncStateMachine" select i).Any();
+            this.IsStateMachine = typeDef.Interfaces.Any(
+                i => i.InterfaceType.FullName is "System.Runtime.CompilerServices.IAsyncStateMachine");
         }
 
         /// <inheritdoc/>
@@ -102,7 +98,7 @@ namespace Microsoft.Coyote.Rewriting
                 }
 
                 var name = handler.CatchType.FullName;
-                if (name == "System.Object" || name == "System.Exception" || name == "Microsoft.Coyote.RuntimeException")
+                if (name is "System.Object" || name is "System.Exception" || name is "Microsoft.Coyote.RuntimeException")
                 {
                     this.AddThrowIfExecutionCanceledException(handler);
                 }
@@ -127,8 +123,8 @@ namespace Microsoft.Coyote.Rewriting
 
             Debug.WriteLine($"............. [+] inserting ExecutionCanceledException check into existing handler.");
 
-            var handlerType = this.Method.Module.ImportReference(typeof(Microsoft.Coyote.SystematicTesting.Interception.ExceptionHandlers)).Resolve();
-            MethodReference handlerMethod = (from m in handlerType.Methods where m.Name == "ThrowIfCoyoteRuntimeException" select m).FirstOrDefault();
+            var handlerType = this.Method.Module.ImportReference(typeof(ExceptionHandlers)).Resolve();
+            MethodReference handlerMethod = handlerType.Methods.FirstOrDefault(m => m.Name is "ThrowIfCoyoteRuntimeException");
             handlerMethod = this.Method.Module.ImportReference(handlerMethod);
 
             var processor = this.Method.Body.GetILProcessor();

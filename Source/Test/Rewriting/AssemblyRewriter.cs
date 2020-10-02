@@ -122,9 +122,10 @@ namespace Microsoft.Coyote.Rewriting
 
             this.Transforms = new List<AssemblyTransform>()
             {
-                 new TaskTransform(this.Log),
-                 new MonitorTransform(this.Log),
-                 new ExceptionFilterTransform(this.Log)
+                new ApiLogTransform(this.Log),
+                // new TaskTransform(this.Log),
+                // new MonitorTransform(this.Log),
+                // new ExceptionFilterTransform(this.Log)
             };
 
             if (this.Options.IsRewritingThreads)
