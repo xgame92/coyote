@@ -505,6 +505,7 @@ namespace Microsoft.Coyote.Rewriting
                 {
                     typeof(ControlledTask),
                     typeof(AssemblyRewriter),
+                    typeof(System.Text.Json.JsonSerializer),
                     typeof(TelemetryConfiguration),
                     typeof(EventTelemetry),
                     typeof(ITelemetry),
