@@ -4,7 +4,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text.Json;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 
 namespace Microsoft.Coyote.SystematicTesting.Interception
 {
@@ -41,6 +42,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// Information about API invocations that can be serialized to a JSON file.
         /// </summary>
+        [DataContract]
         public class Info
         {
             private static readonly object SyncObject = new object();
@@ -48,16 +50,19 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             /// <summary>
             /// The name of the test.
             /// </summary>
+            [DataMember(Name = "Name", IsRequired = true)]
             public string Name { get; set; }
 
             /// <summary>
             /// The location of the test.
             /// </summary>
+            [DataMember(Name = "Location", IsRequired = true)]
             public string Location { get; set; }
 
             /// <summary>
             /// Map from APIs to their invocation frequency.
             /// </summary>
+            [DataMember(Name = "APIs", IsRequired = true)]
             public IDictionary<string, int> APIs { get; set; }
 
             /// <summary>
@@ -101,12 +106,9 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             {
                 lock (SyncObject)
                 {
-                    string results = JsonSerializer.Serialize(this, new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
-
-                    File.WriteAllText(this.FilePath, results);
+                    using FileStream fs = new FileStream(this.FilePath, FileMode.Open, FileAccess.Write);
+                    var serializer = new DataContractJsonSerializer(typeof(Info));
+                    serializer.WriteObject(fs, this);
                 }
             }
 
