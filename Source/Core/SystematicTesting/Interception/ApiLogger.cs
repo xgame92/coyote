@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,7 +37,11 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// </summary>
         public static void LogInvocation(string name)
         {
-            LatestTestInfo.LogInvocation(name);
+            // TODO: log the test constructor.
+            if (LatestTestInfo != null)
+            {
+                LatestTestInfo.LogInvocation(name);
+            }
         }
 
         /// <summary>

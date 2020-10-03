@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Coyote.IO;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 
 namespace Microsoft.Coyote.Rewriting
 {
@@ -520,6 +521,18 @@ namespace Microsoft.Coyote.Rewriting
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Fixes the instruction offsets of the specified method.
+        /// </summary>
+        protected static void FixInstructionOffsets(MethodDefinition method)
+        {
+            // Sometimes, when new code has been inserted into a method, it is possible that some short
+            // branch instructions are out of range and need to be switched to long branches. This fixes
+            // that and it also recomputes instruction indexes.
+            method.Body.SimplifyMacros();
+            method.Body.OptimizeMacros();
         }
     }
 }

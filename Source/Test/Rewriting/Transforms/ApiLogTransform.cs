@@ -75,6 +75,8 @@ namespace Microsoft.Coyote.Rewriting
 
                 MethodReference loggerMethod = this.GetLoggerMethod("LogTestStarted");
                 this.Processor.InsertBefore(instruction, Instruction.Create(OpCodes.Call, loggerMethod));
+
+                FixInstructionOffsets(this.Method);
             }
 
             // Rewrite the method body instructions.
@@ -114,6 +116,8 @@ namespace Microsoft.Coyote.Rewriting
 
                     MethodReference loggerMethod = this.GetLoggerMethod("LogInvocation");
                     this.Processor.InsertBefore(instruction, Instruction.Create(OpCodes.Call, loggerMethod));
+
+                    FixInstructionOffsets(this.Method);
                 }
             }
             catch (AssemblyResolutionException)

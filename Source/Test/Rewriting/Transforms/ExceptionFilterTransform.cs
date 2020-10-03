@@ -60,7 +60,7 @@ namespace Microsoft.Coyote.Rewriting
 
             if (this.ModifiedHandlers)
             {
-                this.FixupInstructionOffsets();
+                FixInstructionOffsets(method);
             }
         }
 
@@ -117,7 +117,7 @@ namespace Microsoft.Coyote.Rewriting
             {
                 // A previous transform may have replaced some instructions, and if so, we need to recompute
                 // the instruction indexes before we operate on the try catch.
-                this.FixupInstructionOffsets();
+                FixInstructionOffsets(this.Method);
                 this.ModifiedHandlers = true;
             }
 
@@ -148,15 +148,6 @@ namespace Microsoft.Coyote.Rewriting
                     other.HandlerEnd = newStart;
                 }
             }
-        }
-
-        private void FixupInstructionOffsets()
-        {
-            // Now because we have now inserted new code into this method, it is possible some short branch instructions
-            // are now out of range, and need to be switch to long branches.  This fixes that and it also
-            // recomputes instruction indexes which is also needed for valid write assembly operation.
-            this.Method.Body.SimplifyMacros();
-            this.Method.Body.OptimizeMacros();
         }
 
         private static List<Instruction> GetHandlerInstructions(ExceptionHandler handler)
