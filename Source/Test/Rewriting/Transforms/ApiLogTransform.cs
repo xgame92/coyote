@@ -1,21 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Coyote.IO;
 using Microsoft.Coyote.SystematicTesting.Interception;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using ControlledTasks = Microsoft.Coyote.SystematicTesting.Interception;
-using CoyoteTasks = Microsoft.Coyote.Tasks;
-using SystemCompiler = System.Runtime.CompilerServices;
-using SystemTasks = System.Threading.Tasks;
-using SystemThreading = System.Threading;
 
 namespace Microsoft.Coyote.Rewriting
 {
@@ -116,7 +107,7 @@ namespace Microsoft.Coyote.Rewriting
             try
             {
                 TypeDefinition resolvedDeclaringType = method.DeclaringType.Resolve();
-                if (IsThreadingType(resolvedDeclaringType))
+                if (IsEligibleType(resolvedDeclaringType))
                 {
                     string name = GetFullyQualifiedMethodName(method, resolvedDeclaringType);
                     this.Processor.InsertBefore(instruction, Instruction.Create(OpCodes.Ldstr, name));
@@ -156,9 +147,9 @@ namespace Microsoft.Coyote.Rewriting
         }
 
         /// <summary>
-        /// Checks if the specified type is a threading type.
+        /// Checks if the specified type should be logged.
         /// </summary>
-        private static bool IsThreadingType(TypeDefinition type)
+        private static bool IsEligibleType(TypeDefinition type)
         {
             if (type is null)
             {
@@ -166,18 +157,24 @@ namespace Microsoft.Coyote.Rewriting
             }
 
             string module = Path.GetFileName(type.Module.FileName);
-            return (module is "System.Private.CoreLib.dll" || module is "mscorlib.dll") &&
-                (type.Namespace.StartsWith(KnownNamespaces.Threading) ||
-                type.Namespace.StartsWith(KnownNamespaces.CompilerServices));
-        }
+            if (!(module is "System.Private.CoreLib.dll" || module is "mscorlib.dll"))
+            {
+                return false;
+            }
 
-        /// <summary>
-        /// Cache of known namespace names.
-        /// </summary>
-        private static class KnownNamespaces
-        {
-            internal static string CompilerServices { get; } = typeof(TaskAwaiter).Namespace;
-            internal static string Threading { get; } = typeof(Thread).Namespace;
+            bool isEligibleSystemType = type.Namespace.StartsWith(typeof(System.Exception).Namespace) &&
+                (type.Name is "Random" || type.Name is "Guid" || type.Name is "DateTime" || type.Name is "TimeSpan");
+            bool isEligibleThreadingType = type.Namespace.StartsWith(typeof(System.Runtime.CompilerServices.TaskAwaiter).Namespace) ||
+                type.Namespace.StartsWith(typeof(System.Threading.Thread).Namespace);
+            bool isEligibleDiagnosticsType = type.Namespace.StartsWith(typeof(System.Diagnostics.Process).Namespace) &&
+                type.Name is "Process";
+            bool isEligibleTimersType = type.Namespace.StartsWith(typeof(System.Timers.Timer).Namespace);
+            if (isEligibleSystemType || isEligibleThreadingType || isEligibleDiagnosticsType || isEligibleTimersType)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

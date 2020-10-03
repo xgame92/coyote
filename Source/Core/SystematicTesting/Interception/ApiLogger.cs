@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Xml.Serialization;
 
@@ -74,13 +75,12 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             /// <summary>
             /// List of invoked APIs.
             /// </summary>
-            [XmlElement("APIs")]
-            public List<API> APIsProxy
+            public List<API> APIs
             {
                 get
                 {
                     var list = new List<API>();
-                    foreach (var kvp in this.APIs)
+                    foreach (var kvp in this.ApiFrequencies)
                     {
                         list.Add(new API()
                         {
@@ -91,13 +91,20 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
 
                     return list;
                 }
+
+                set
+                {
+                    foreach (var api in value)
+                    {
+                        this.ApiFrequencies[api.Name] = api.Frequency;
+                    }
+                }
             }
 
             /// <summary>
             /// Map from APIs to their invocation frequency.
             /// </summary>
-            [XmlIgnore]
-            public IDictionary<string, int> APIs { get; set; }
+            private readonly IDictionary<string, int> ApiFrequencies;
 
             /// <summary>
             /// Path to the serialized file.
@@ -109,6 +116,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             /// </summary>
             public Info()
             {
+                this.ApiFrequencies = new SortedDictionary<string, int>();
             }
 
             /// <summary>
@@ -118,18 +126,18 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             {
                 this.Name = name;
                 this.Location = this.GetLocation();
-                this.FilePath = this.GetFilePath(this.Location, name);
-                this.APIs = new SortedDictionary<string, int>();
+                this.FilePath = this.GetFilePath(this.Location, name.Split('.').Last());
+                this.ApiFrequencies = new SortedDictionary<string, int>();
             }
 
             internal void LogInvocation(string name)
             {
-                if (!this.APIs.ContainsKey(name))
+                if (!this.ApiFrequencies.ContainsKey(name))
                 {
-                    this.APIs.Add(name, 0);
+                    this.ApiFrequencies.Add(name, 0);
                 }
 
-                this.APIs[name]++;
+                this.ApiFrequencies[name]++;
                 this.Save();
             }
 
