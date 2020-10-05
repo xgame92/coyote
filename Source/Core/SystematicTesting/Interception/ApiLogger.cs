@@ -18,16 +18,16 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
     public static class ApiLogger
     {
         /// <summary>
-        /// Info about the latest test executing.
+        /// API invocation information about the latest test executing.
         /// </summary>
-        private static Info LatestTestInfo;
+        private static ApiInvocationInfo LatestTestInfo;
 
         /// <summary>
         /// Logs that the specified test started executing.
         /// </summary>
         public static void LogTestStarted(string name)
         {
-            var info = new Info(name);
+            var info = new ApiInvocationInfo(name);
             info.Save();
             LatestTestInfo = info;
         }
@@ -47,7 +47,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// Information about an API.
         /// </summary>
-        public class API
+        public class ApiInvocation
         {
             /// <summary>
             /// The name of the API.
@@ -63,7 +63,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// Information about API invocations that can be serialized to an XML file.
         /// </summary>
-        public class Info
+        public class ApiInvocationInfo
         {
             private static readonly object SyncObject = new object();
 
@@ -80,14 +80,14 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             /// <summary>
             /// List of invoked APIs.
             /// </summary>
-            public List<API> APIs
+            public List<ApiInvocation> APIs
             {
                 get
                 {
-                    var list = new List<API>();
+                    var list = new List<ApiInvocation>();
                     foreach (var kvp in this.ApiFrequencies)
                     {
-                        list.Add(new API()
+                        list.Add(new ApiInvocation()
                         {
                             Name = kvp.Key,
                             Frequency = kvp.Value
@@ -117,21 +117,21 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             private readonly string FilePath;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="Info"/> class.
+            /// Initializes a new instance of the <see cref="ApiInvocationInfo"/> class.
             /// </summary>
-            public Info()
+            public ApiInvocationInfo()
             {
                 this.ApiFrequencies = new SortedDictionary<string, int>();
             }
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="Info"/> class.
+            /// Initializes a new instance of the <see cref="ApiInvocationInfo"/> class.
             /// </summary>
-            internal Info(string name)
+            internal ApiInvocationInfo(string name)
             {
                 this.Name = name;
                 this.Location = this.GetLocation();
-                this.FilePath = this.GetFilePath(this.Location, name.Split('.').Last());
+                this.FilePath = this.GetFilePath(this.Location, Guid.NewGuid().ToString());
                 this.ApiFrequencies = new SortedDictionary<string, int>();
             }
 
@@ -154,14 +154,14 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
                 lock (SyncObject)
                 {
                     using FileStream fs = new FileStream(this.FilePath, FileMode.OpenOrCreate, FileAccess.Write);
-                    var serializer = new XmlSerializer(typeof(Info));
+                    var serializer = new XmlSerializer(typeof(ApiInvocationInfo));
                     serializer.Serialize(fs, this);
                 }
             }
 
             private string GetLocation() => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            private string GetFilePath(string location, string name) => Path.Combine(location, $"{name}.api.xml");
+            private string GetFilePath(string location, string name) => Path.Combine(location, $"test.{name}.api.xml");
         }
     }
 }
