@@ -20,14 +20,14 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// API invocation information about the latest test executing.
         /// </summary>
-        private static ApiInvocationInfo LatestTestInfo;
+        private static ApiInvocations LatestTestInfo;
 
         /// <summary>
         /// Logs that the specified test started executing.
         /// </summary>
         public static void LogTestStarted(string name)
         {
-            var info = new ApiInvocationInfo(name);
+            var info = new ApiInvocations(name);
             info.Save();
             LatestTestInfo = info;
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
         /// <summary>
         /// Information about API invocations that can be serialized to an XML file.
         /// </summary>
-        public class ApiInvocationInfo
+        public class ApiInvocations
         {
             private static readonly object SyncObject = new object();
 
@@ -117,17 +117,17 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
             private readonly string FilePath;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ApiInvocationInfo"/> class.
+            /// Initializes a new instance of the <see cref="ApiInvocations"/> class.
             /// </summary>
-            public ApiInvocationInfo()
+            public ApiInvocations()
             {
                 this.ApiFrequencies = new SortedDictionary<string, int>();
             }
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ApiInvocationInfo"/> class.
+            /// Initializes a new instance of the <see cref="ApiInvocations"/> class.
             /// </summary>
-            internal ApiInvocationInfo(string name)
+            internal ApiInvocations(string name)
             {
                 this.Name = name;
                 this.Location = this.GetLocation();
@@ -154,7 +154,7 @@ namespace Microsoft.Coyote.SystematicTesting.Interception
                 lock (SyncObject)
                 {
                     using FileStream fs = new FileStream(this.FilePath, FileMode.OpenOrCreate, FileAccess.Write);
-                    var serializer = new XmlSerializer(typeof(ApiInvocationInfo));
+                    var serializer = new XmlSerializer(typeof(ApiInvocations));
                     serializer.Serialize(fs, this);
                 }
             }
