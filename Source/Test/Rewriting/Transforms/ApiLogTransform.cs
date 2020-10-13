@@ -112,6 +112,9 @@ namespace Microsoft.Coyote.Rewriting
                 if (IsEligibleType(resolvedDeclaringType))
                 {
                     string name = GetFullyQualifiedMethodName(method, resolvedDeclaringType);
+
+                    Debug.WriteLine($"............. [+] logging API {name}.");
+
                     this.Processor.InsertBefore(instruction, Instruction.Create(OpCodes.Ldstr, name));
 
                     MethodReference loggerMethod = this.GetLoggerMethod("LogInvocation");
