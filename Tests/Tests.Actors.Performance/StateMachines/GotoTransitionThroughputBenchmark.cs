@@ -4,11 +4,12 @@
 using System;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-using Microsoft.Coyote.Actors;
+using BenchmarkDotNet.Jobs;
 
-namespace Microsoft.Coyote.Performance.Tests.Actors.StateMachines
+namespace Microsoft.Coyote.Actors.Tests.Performance.StateMachines
 {
-    // [MemoryDiagnoser, ThreadingDiagnoser]
+    [SimpleJob(RuntimeMoniker.NetCoreApp31)]
+    [MemoryDiagnoser]
     [MinColumn, MaxColumn, MeanColumn, Q1Column, Q3Column, RankColumn]
     [MarkdownExporter, HtmlExporter, CsvExporter, CsvMeasurementsExporter, RPlotExporter]
     public class GotoTransitionThroughputBenchmark
@@ -103,12 +104,12 @@ namespace Microsoft.Coyote.Performance.Tests.Actors.StateMachines
         }
 
         [Benchmark]
-        public void MeasureGotoTransitionThroughput()
+        public async Task MeasureGotoTransitionThroughput()
         {
             var tcs = new TaskCompletionSource<bool>();
             var setup = new SetupEvent(tcs, NumTransitions);
             this.Runtime.CreateActor(typeof(M), null, setup);
-            setup.Tcs.Task.Wait();
+            await tcs.Task;
         }
     }
 }
