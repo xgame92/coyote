@@ -26,7 +26,7 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
         /// <summary>
         /// Strategy used for scheduling decisions.
         /// </summary>
-        protected ISchedulingStrategy SchedulingStrategy;
+        internal ISchedulingStrategy SchedulingStrategy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LivenessCheckingStrategy"/> class.

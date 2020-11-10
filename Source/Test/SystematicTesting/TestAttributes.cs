@@ -36,4 +36,12 @@ namespace Microsoft.Coyote.SystematicTesting
     public sealed class TestIterationDisposeAttribute : Attribute
     {
     }
+
+    /// <summary>
+    /// Attribute for declaring a method to be called for getting the state hash of the program.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class TestStateHashAttribute : Attribute
+    {
+    }
 }

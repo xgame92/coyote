@@ -557,7 +557,8 @@ namespace Microsoft.Coyote.SystematicTesting
             try
             {
                 // Creates a new instance of the controlled runtime.
-                runtime = new CoyoteRuntime(this.Configuration, this.Strategy, this.RandomValueGenerator);
+                runtime = new CoyoteRuntime(this.Configuration, this.Strategy, this.RandomValueGenerator,
+                    this.TestMethodInfo.HashingMethod);
 
                 // If verbosity is turned off, then intercept the program log, and also redirect
                 // the standard output and error streams to a nul logger.

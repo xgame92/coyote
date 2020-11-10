@@ -64,7 +64,7 @@ namespace Microsoft.Coyote.Runtime
             }
 
             var valueGenerator = new RandomValueGenerator(configuration);
-            return new CoyoteRuntime(configuration, valueGenerator);
+            return new CoyoteRuntime(configuration, valueGenerator, null);
         }
     }
 }

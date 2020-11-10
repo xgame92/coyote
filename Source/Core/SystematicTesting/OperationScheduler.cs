@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Coyote.Runtime;
+using Microsoft.Coyote.SystematicTesting.Strategies;
 
 namespace Microsoft.Coyote.SystematicTesting
 {
@@ -220,6 +221,16 @@ namespace Microsoft.Coyote.SystematicTesting
                     IO.Debug.WriteLine("<ScheduleDebug> Operation '{0}' has status '{1}'.", op.Id, op.Status);
                 }
 
+                // Update the current execution state.
+                if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is RandomStrategy rs)
+                {
+                    rs.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
+                }
+                else if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is PCTStrategy pct)
+                {
+                    pct.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
+                }
+
                 // Choose the next operation to schedule, if there is one enabled.
                 if (!this.Strategy.GetNextOperation(ops, current, isYielding, out next) &&
                     this.Configuration.IsPartiallyControlledTestingEnabled &&
@@ -280,6 +291,16 @@ namespace Microsoft.Coyote.SystematicTesting
                     this.ScheduledOperation.HashedProgramState = this.Runtime.GetHashedProgramState();
                 }
 
+                // Update the current execution state.
+                if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is RandomStrategy rs)
+                {
+                    rs.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
+                }
+                else if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is PCTStrategy pct)
+                {
+                    pct.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
+                }
+
                 if (!this.Strategy.GetNextBooleanChoice(this.ScheduledOperation, maxValue, out bool choice))
                 {
                     IO.Debug.WriteLine("<ScheduleDebug> Schedule explored.");
@@ -313,6 +334,16 @@ namespace Microsoft.Coyote.SystematicTesting
                 {
                     // Update the current operation with the hashed program state.
                     this.ScheduledOperation.HashedProgramState = this.Runtime.GetHashedProgramState();
+                }
+
+                // Update the current execution state.
+                if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is RandomStrategy rs)
+                {
+                    rs.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
+                }
+                else if ((this.Strategy as TemperatureCheckingStrategy).SchedulingStrategy is PCTStrategy pct)
+                {
+                    pct.CaptureExecutionStep(this.Runtime.GetHashedProgramState());
                 }
 
                 if (!this.Strategy.GetNextIntegerChoice(this.ScheduledOperation, maxValue, out int choice))

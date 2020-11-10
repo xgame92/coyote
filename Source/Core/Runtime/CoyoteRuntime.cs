@@ -99,6 +99,8 @@ namespace Microsoft.Coyote.Runtime
         /// </summary>
         private readonly ConcurrentDictionary<Task, TaskOperation> TaskMap;
 
+        private readonly MethodInfo HashingMethod;
+
         /// <summary>
         /// Monotonically increasing operation id counter.
         /// </summary>
@@ -142,8 +144,8 @@ namespace Microsoft.Coyote.Runtime
         /// <summary>
         /// Initializes a new instance of the <see cref="CoyoteRuntime"/> class.
         /// </summary>
-        internal CoyoteRuntime(Configuration configuration, IRandomValueGenerator valueGenerator)
-            : this(configuration, null, valueGenerator)
+        internal CoyoteRuntime(Configuration configuration, IRandomValueGenerator valueGenerator, MethodInfo hashingMethod)
+            : this(configuration, null, valueGenerator, hashingMethod)
         {
         }
 
@@ -151,7 +153,7 @@ namespace Microsoft.Coyote.Runtime
         /// Initializes a new instance of the <see cref="CoyoteRuntime"/> class.
         /// </summary>
         internal CoyoteRuntime(Configuration configuration, ISchedulingStrategy strategy,
-            IRandomValueGenerator valueGenerator)
+            IRandomValueGenerator valueGenerator, MethodInfo hashingMethod)
         {
             this.Configuration = configuration;
 
@@ -164,6 +166,7 @@ namespace Microsoft.Coyote.Runtime
             this.OperationIdCounter = 0;
             this.RootTaskId = Task.CurrentId;
             this.TaskMap = new ConcurrentDictionary<Task, TaskOperation>();
+            this.HashingMethod = hashingMethod;
 
             this.LogWriter = new LogWriter(configuration);
 
@@ -1461,16 +1464,7 @@ namespace Microsoft.Coyote.Runtime
         /// The hash is updated in each execution step.
         /// </remarks>
         [DebuggerStepThrough]
-        internal int GetHashedProgramState()
-        {
-            unchecked
-            {
-                int hash = 19;
-                hash = (hash * 397) + this.DefaultActorExecutionContext.GetHashedActorState();
-                hash = (hash * 397) + this.SpecificationEngine.GetHashedMonitorState();
-                return hash;
-            }
-        }
+        internal int GetHashedProgramState() => (int)this.HashingMethod?.Invoke(null, Array.Empty<object>());
 
         /// <summary>
         /// Reports the specified thrown exception.

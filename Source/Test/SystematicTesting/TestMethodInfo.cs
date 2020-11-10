@@ -34,6 +34,11 @@ namespace Microsoft.Coyote.SystematicTesting
         internal readonly string Name;
 
         /// <summary>
+        /// The test state hashing method.
+        /// </summary>
+        internal readonly MethodInfo HashingMethod;
+
+        /// <summary>
         /// The test initialization method.
         /// </summary>
         private readonly MethodInfo InitMethod;
@@ -51,12 +56,13 @@ namespace Microsoft.Coyote.SystematicTesting
         /// <summary>
         /// Initializes a new instance of the <see cref="TestMethodInfo"/> class.
         /// </summary>
-        private TestMethodInfo(Assembly assembly, Delegate method, string name, MethodInfo initMethod,
+        private TestMethodInfo(Assembly assembly, Delegate method, string name, MethodInfo hashingMethod, MethodInfo initMethod,
             MethodInfo disposeMethod, MethodInfo iterationDisposeMethod)
         {
             this.Assembly = assembly;
             this.Method = method;
             this.Name = name;
+            this.HashingMethod = hashingMethod;
             this.InitMethod = initMethod;
             this.DisposeMethod = disposeMethod;
             this.IterationDisposeMethod = iterationDisposeMethod;
@@ -66,7 +72,7 @@ namespace Microsoft.Coyote.SystematicTesting
         /// Creates a <see cref="TestMethodInfo"/> instance from the specified delegate.
         /// </summary>
         internal static TestMethodInfo Create(Delegate method) =>
-            new TestMethodInfo(method.GetMethodInfo().Module.Assembly, method, null, null, null, null);
+            new TestMethodInfo(method.GetMethodInfo().Module.Assembly, method, null, null, null, null, null);
 
         /// <summary>
         /// Creates a <see cref="TestMethodInfo"/> instance from assembly specified in the configuration.
@@ -79,8 +85,9 @@ namespace Microsoft.Coyote.SystematicTesting
             var initMethod = GetTestSetupMethod(assembly, typeof(TestInitAttribute));
             var disposeMethod = GetTestSetupMethod(assembly, typeof(TestDisposeAttribute));
             var iterationDisposeMethod = GetTestSetupMethod(assembly, typeof(TestIterationDisposeAttribute));
+            var hashingMethod = GetTestHashingMethod(assembly);
 
-            return new TestMethodInfo(assembly, testMethod, testName, initMethod, disposeMethod, iterationDisposeMethod);
+            return new TestMethodInfo(assembly, testMethod, testName, hashingMethod, initMethod, disposeMethod, iterationDisposeMethod);
         }
 
         /// <summary>
@@ -275,6 +282,39 @@ namespace Microsoft.Coyote.SystematicTesting
                 throw new InvalidOperationException("Incorrect test method declaration. Please " +
                     "declare the test method as follows:\n" +
                     $"  [{attribute.FullName}] public static void " +
+                    $"{testMethods[0].Name}() {{ ... }}");
+            }
+
+            return testMethods[0];
+        }
+
+        private static MethodInfo GetTestHashingMethod(Assembly assembly)
+        {
+            Type attribute = typeof(TestStateHashAttribute);
+            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.InvokeMethod;
+            List<MethodInfo> testMethods = FindTestMethodsWithAttribute(attribute, flags, assembly);
+
+            if (testMethods.Count is 0)
+            {
+                return null;
+            }
+            else if (testMethods.Count > 1)
+            {
+                throw new InvalidOperationException("Only one test method to the Coyote program can " +
+                    $"be declared with the attribute '{attribute.FullName}'. " +
+                    $"'{testMethods.Count}' test methods were found instead.");
+            }
+
+            if (testMethods[0].ReturnType != typeof(int) ||
+                testMethods[0].ContainsGenericParameters ||
+                testMethods[0].IsAbstract || testMethods[0].IsVirtual ||
+                testMethods[0].IsConstructor ||
+                !testMethods[0].IsPublic || !testMethods[0].IsStatic ||
+                testMethods[0].GetParameters().Length != 0)
+            {
+                throw new InvalidOperationException("Incorrect test method declaration. Please " +
+                    "declare the test method as follows:\n" +
+                    $"  [{attribute.FullName}] public static int " +
                     $"{testMethods[0].Name}() {{ ... }}");
             }
 

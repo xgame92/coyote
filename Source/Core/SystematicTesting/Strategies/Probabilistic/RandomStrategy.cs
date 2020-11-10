@@ -27,21 +27,52 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
         protected int ScheduledSteps;
 
         /// <summary>
+        /// The set of custom hashed states.
+        /// </summary>
+        private readonly HashSet<int> CustomHashedStates;
+
+        /// <summary>
+        /// The number of explored executions.
+        /// </summary>
+        private int Epochs;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RandomStrategy"/> class.
         /// </summary>
         public RandomStrategy(int maxSteps, IRandomValueGenerator random)
         {
             this.RandomValueGenerator = random;
             this.MaxScheduledSteps = maxSteps;
+            this.CustomHashedStates = new HashSet<int>();
+            this.Epochs = 0;
         }
 
         /// <inheritdoc/>
         public virtual bool InitializeNextIteration(uint iteration)
         {
+            if (this.Epochs == 10 || this.Epochs == 20 || this.Epochs == 40 || this.Epochs == 80 ||
+                this.Epochs == 160 || this.Epochs == 320 || this.Epochs == 640 || this.Epochs == 1280 || this.Epochs == 2560 ||
+                this.Epochs == 5120 || this.Epochs == 10240 || this.Epochs == 20480 || this.Epochs == 40960 ||
+                this.Epochs == 81920 || this.Epochs == 163840)
+            {
+                System.Console.WriteLine($"==================> #{this.Epochs} Custom States (size: {this.CustomHashedStates.Count})");
+            }
+
+            this.Epochs++;
+
             // The random strategy just needs to reset the number of scheduled steps during
             // the current iretation.
             this.ScheduledSteps = 0;
             return true;
+        }
+
+        /// <summary>
+        /// Captures metadata related to the current execution step, and returns
+        /// a value representing the current program state.
+        /// </summary>
+        internal void CaptureExecutionStep(int state)
+        {
+            this.CustomHashedStates.Add(state);
         }
 
         /// <inheritdoc/>

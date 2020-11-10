@@ -53,6 +53,16 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
         private readonly HashSet<int> PriorityChangePoints;
 
         /// <summary>
+        /// The set of custom hashed states.
+        /// </summary>
+        private readonly HashSet<int> CustomHashedStates;
+
+        /// <summary>
+        /// The number of explored executions.
+        /// </summary>
+        private int Epochs;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PCTStrategy"/> class.
         /// </summary>
         public PCTStrategy(int maxSteps, int maxPrioritySwitchPoints, IRandomValueGenerator random)
@@ -64,11 +74,23 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
             this.MaxPrioritySwitchPoints = maxPrioritySwitchPoints;
             this.PrioritizedOperations = new List<AsyncOperation>();
             this.PriorityChangePoints = new HashSet<int>();
+            this.CustomHashedStates = new HashSet<int>();
+            this.Epochs = 0;
         }
 
         /// <inheritdoc/>
         public bool InitializeNextIteration(uint iteration)
         {
+            if (this.Epochs == 10 || this.Epochs == 20 || this.Epochs == 40 || this.Epochs == 80 ||
+                this.Epochs == 160 || this.Epochs == 320 || this.Epochs == 640 || this.Epochs == 1280 || this.Epochs == 2560 ||
+                this.Epochs == 5120 || this.Epochs == 10240 || this.Epochs == 20480 || this.Epochs == 40960 ||
+                this.Epochs == 81920 || this.Epochs == 163840)
+            {
+                Console.WriteLine($"==================> #{this.Epochs} Custom States (size: {this.CustomHashedStates.Count})");
+            }
+
+            this.Epochs++;
+
             // The first iteration has no knowledge of the execution, so only initialize from the second
             // iteration and onwards. Note that although we could initialize the first length based on a
             // heuristic, its not worth it, as the strategy will typically explore thousands of iterations,
@@ -91,6 +113,15 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Captures metadata related to the current execution step, and returns
+        /// a value representing the current program state.
+        /// </summary>
+        internal void CaptureExecutionStep(int state)
+        {
+            this.CustomHashedStates.Add(state);
         }
 
         /// <inheritdoc/>
@@ -219,7 +250,7 @@ namespace Microsoft.Coyote.SystematicTesting.Strategies
         }
 
         /// <inheritdoc/>
-        public bool IsFair() => false;
+        public bool IsFair() => true;
 
         /// <inheritdoc/>
         public string GetDescription()
