@@ -15,7 +15,7 @@ namespace Microsoft.Coyote.SystematicTesting
     /// Service that gives access to scheduling APIs for controlling the execution
     /// of asynchronous operations during systematic testing.
     /// </summary>
-    public static class SchedulingService
+    public static class Scheduler
     {
         /// <summary>
         /// Map from unique ids to asynchronous operations.
@@ -24,7 +24,7 @@ namespace Microsoft.Coyote.SystematicTesting
             new ConcurrentDictionary<Guid, OperationScheduler>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SchedulingService"/> class.
+        /// Initializes a new instance of the <see cref="Scheduler"/> class.
         /// </summary>
         //internal SchedulingService()
         //{
