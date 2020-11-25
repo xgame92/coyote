@@ -4,7 +4,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Microsoft.Coyote.TestingService
+namespace Microsoft.Coyote.TestService
 {
     /// <summary>
     /// Entry point to the systematic testing service.

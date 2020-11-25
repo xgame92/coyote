@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Microsoft.Coyote.TestingService
+namespace Microsoft.Coyote.TestService
 {
     internal class Startup
     {

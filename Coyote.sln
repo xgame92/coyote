@@ -44,7 +44,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.Tasks.SystematicTesti
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.SystematicTesting", "Tests\Tests.SystematicTesting\Tests.SystematicTesting.csproj", "{130CC5A8-946C-4EB3-982C-F6A57EB65326}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestingService", "Source\TestingService\TestingService.csproj", "{B3AD0A5A-772D-4E99-9B21-2299A66DC63C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestService", "Source\TestService\TestService.csproj", "{B3AD0A5A-772D-4E99-9B21-2299A66DC63C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

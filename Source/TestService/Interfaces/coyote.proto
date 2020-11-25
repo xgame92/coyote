@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "Microsoft.Coyote.TestingService";
+option csharp_namespace = "Microsoft.Coyote.TestService";
 
 package coyote;
 

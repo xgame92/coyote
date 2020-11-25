@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Coyote.TestingService
+namespace Microsoft.Coyote.TestService
 {
     /// <summary>
     /// Scheduling service using gRPC.
