@@ -290,7 +290,7 @@ namespace Microsoft.Coyote.Runtime
                 op = new TaskOperation(operationId, $"Task({operationId})", this.Scheduler);
             }
 
-            this.Scheduler.RegisterOperation(op);
+            this.Scheduler.CreateOperation(op);
             return op;
         }
 

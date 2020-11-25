@@ -955,7 +955,7 @@ namespace Microsoft.Coyote.Actors
                     actor.ReportActivityCoverage(this.CoverageInfo);
                 }
 
-                bool result = this.Scheduler.RegisterOperation(op);
+                bool result = this.Scheduler.CreateOperation(op);
                 this.Assert(result, "Actor id '{0}' is used by an existing or previously halted actor.", id.Value);
                 if (actor is StateMachine)
                 {

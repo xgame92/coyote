@@ -48,7 +48,7 @@ namespace Microsoft.Coyote.SystematicTesting
         /// <summary>
         /// Map from unique ids to asynchronous operations.
         /// </summary>
-        private readonly Dictionary<ulong, AsyncOperation> OperationMap;
+        internal readonly Dictionary<ulong, AsyncOperation> OperationMap;
 
         /// <summary>
         /// The program schedule trace.
@@ -327,11 +327,11 @@ namespace Microsoft.Coyote.SystematicTesting
         }
 
         /// <summary>
-        /// Registers the specified asynchronous operation.
+        /// Creates the specified asynchronous operation.
         /// </summary>
         /// <param name="op">The operation to register.</param>
         /// <returns>True if the operation was successfully registered, else false if it already exists.</returns>
-        internal bool RegisterOperation(AsyncOperation op)
+        internal bool CreateOperation(AsyncOperation op)
         {
             lock (this.SyncObject)
             {
