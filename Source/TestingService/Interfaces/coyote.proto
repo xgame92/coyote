@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option csharp_namespace = "Microsoft.Coyote.TestingService";
 
-package scheduler;
+package coyote;
 
 // The greeting service definition.
 service Scheduler {

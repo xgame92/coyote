@@ -12,7 +12,7 @@
   <Import Project="..\..\Common\build.props" />
   <Import Project="..\..\Common\key.props" />
   <ItemGroup>
-    <Protobuf Include="Interfaces\scheduler.proto" GrpcServices="Server" />
+    <Protobuf Include="Interfaces\coyote.proto" GrpcServices="Server" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
