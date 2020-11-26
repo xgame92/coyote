@@ -10,7 +10,7 @@ namespace Microsoft.Coyote.TestService
     /// <summary>
     /// Scheduling service using gRPC.
     /// </summary>
-    public class SchedulingService : Scheduler.SchedulerBase
+    internal class SchedulingService : Scheduler.SchedulerBase
     {
         private readonly ILogger<SchedulingService> Logger;
 
@@ -22,11 +22,12 @@ namespace Microsoft.Coyote.TestService
             this.Logger = logger;
         }
 
-        public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
+        public override Task<ScheduleReply> Attach(ScheduleRequest request, ServerCallContext context)
         {
-            return Task.FromResult(new HelloReply
+            this.Logger.LogInformation("Attaching to the scheduler with id {0}", request.SchedulerId);
+            return Task.FromResult(new ScheduleReply
             {
-                Message = "Hello " + request.Name
+                ErrorCode = (uint)ErrorCode.Success
             });
         }
     }
