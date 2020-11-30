@@ -18,6 +18,6 @@
     <PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Source\Core\Core.csproj" />
+    <ProjectReference Include="..\..\Source\Test\Test.csproj" />
   </ItemGroup>
 </Project>

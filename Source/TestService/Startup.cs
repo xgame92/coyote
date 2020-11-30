@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Coyote.SystematicTesting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -20,6 +21,7 @@ namespace Microsoft.Coyote.TestService
 #pragma warning restore CA1822 // Mark members as static
         {
             services.AddGrpc();
+            services.AddSingleton(new Context());
         }
 
         /// <summary>

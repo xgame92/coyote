@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 syntax = "proto3";
 
 option csharp_namespace = "Microsoft.Coyote.TestService";
@@ -6,6 +9,9 @@ package coyote;
 
 // The Coyote test service definition.
 service Scheduler {
+  // Creates a new scheduler and return its globally unique id.
+  rpc Initialize (InitializeRequest) returns (InitializeReply);
+
   // Attaches to the scheduler. This should be called at the beginning of a testing iteration.
   // It creates a main operation with id '0'.
   rpc Attach (AttachRequest) returns (AttachReply);
@@ -21,7 +27,7 @@ service Scheduler {
   rpc StartOperation (StartOperationRequest) returns (StartOperationReply);
 
   // Waits until the operation with the specified id has completed.
-  rpc JoinOperation (JoinOperationRequest) returns (JoinOperationReply);
+  rpc WaitOperation (WaitOperationRequest) returns (WaitOperationReply);
 
   // Completes executing the operation with the specified id and schedules the next operation.
   rpc CompleteOperation (CompleteOperationRequest) returns (CompleteOperationReply);
@@ -31,22 +37,39 @@ service Scheduler {
   rpc ScheduleNext (ScheduleNextRequest) returns (ScheduleNextReply);
 }
 
-// The attach request message containing the scheduler id.
+// The initialize scheduler request message containing the scheduler configuration.
+message InitializeRequest {
+  string strategy_type = 1;
+  uint64 strategy_bound = 2;
+  uint64 random_seed = 3;
+}
+
+// The initialize scheduler response message containing the scheduler id.
+message InitializeReply {
+  uint32 error_code = 1;
+  string scheduler_id = 2;
+}
+
+// The attach scheduler request message containing the scheduler id.
 message AttachRequest {
   string scheduler_id = 1;
 }
 
-// The attach response message containing the error code.
+// The attach scheduler response message containing the error code.
 message AttachReply {
   uint32 error_code = 1;
+  // The current iteration id.
+  uint32 iteration = 2;
+  // The id of the main operation.
+  string main_operation_id = 3;
 }
 
-// The detach request message containing the scheduler id.
+// The detach scheduler request message containing the scheduler id.
 message DetachRequest {
   string scheduler_id = 1;
 }
 
-// The detach response message containing the error code.
+// The detach scheduler response message containing the error code.
 message DetachReply {
   uint32 error_code = 1;
 }
@@ -73,15 +96,17 @@ message StartOperationReply {
   uint32 error_code = 1;
 }
 
-// The join operation request message containing the scheduler id and operation id.
-message JoinOperationRequest {
+// The wait operation request message containing the scheduler id and operation id.
+message WaitOperationRequest {
   string scheduler_id = 1;
   string operation_id = 2;
 }
 
-// The join operation response message containing the error code.
-message JoinOperationReply {
+// The wait operation response message containing the error code.
+message WaitOperationReply {
   uint32 error_code = 1;
+  // The next operation to schedule, if any.
+  string next_operation_id = 2;
 }
 
 // The complete operation request message containing the scheduler id and operation id.
@@ -93,6 +118,8 @@ message CompleteOperationRequest {
 // The complete operation response message containing the error code.
 message CompleteOperationReply {
   uint32 error_code = 1;
+  // The next operation to schedule, if any.
+  string next_operation_id = 2;
 }
 
 // The schedule next request message containing the scheduler id.
@@ -103,4 +130,6 @@ message ScheduleNextRequest {
 // The schedule next response message containing the error code.
 message ScheduleNextReply {
   uint32 error_code = 1;
+  // The next operation to schedule, if any.
+  string next_operation_id = 2;
 }
