@@ -329,29 +329,33 @@ namespace Microsoft.Coyote.TestService
             return this.ScheduledOperation.Guid;
         }
 
-        //internal bool NextBoolean()
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //this.ScheduleTrace.AddNondeterministicBooleanChoice(choice);
-        //    }
-        //}
+        internal bool GetNextBoolean()
+        {
+            lock (this.SyncObject)
+            {
+                if (!this.Strategy.GetNextBooleanChoice(this.ScheduledOperation, 2, out bool next))
+                {
+                    return false;
+                }
 
-        //internal int NextInteger()
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //this.ScheduleTrace.AddNondeterministicIntegerChoice(choice);
-        //    }
-        //}
+                this.ScheduleTrace.AddNondeterministicBooleanChoice(next);
+                return next;
+            }
+        }
 
-        //internal int NextInteger(ulong maxValue)
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //this.ScheduleTrace.AddNondeterministicIntegerChoice(choice);
-        //    }
-        //}
+        internal int GetNextInteger(int maxValue)
+        {
+            lock (this.SyncObject)
+            {
+                if (!this.Strategy.GetNextIntegerChoice(this.ScheduledOperation, maxValue, out int next))
+                {
+                    return 0;
+                }
+
+                this.ScheduleTrace.AddNondeterministicIntegerChoice(next);
+                return next;
+            }
+        }
 
         /// <summary>
         /// Returns the current trace.

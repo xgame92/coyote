@@ -24,9 +24,9 @@ namespace Microsoft.Coyote.TestService
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-// #if !DEBUG
-//                    webBuilder.ConfigureLogging(configureLogging => configureLogging.ClearProviders());
-// #endif
+#if !DEBUG
+                    webBuilder.ConfigureLogging(configureLogging => configureLogging.ClearProviders());
+#endif
                     webBuilder.ConfigureKestrel(options =>
                     {
                         // Setup a HTTP/2 endpoint without TLS.

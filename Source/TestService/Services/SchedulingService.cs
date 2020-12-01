@@ -238,6 +238,32 @@ namespace Microsoft.Coyote.TestService
             });
         }
 
+        public override Task<GetNextBooleanReply> GetNextBoolean(GetNextBooleanRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            this.Logger.LogInformation("Scheduling next operation in scheduler '{0}'.", schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            bool value = scheduler.GetNextBoolean();
+            return Task.FromResult(new GetNextBooleanReply
+            {
+                ErrorCode = (uint)ErrorCode.Success,
+                Value = value
+            });
+        }
+
+        public override Task<GetNextIntegerReply> GetNextInteger(GetNextIntegerRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            this.Logger.LogInformation("Scheduling next operation in scheduler '{0}'.", schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            int value = scheduler.GetNextInteger(request.MaxValue);
+            return Task.FromResult(new GetNextIntegerReply
+            {
+                ErrorCode = (uint)ErrorCode.Success,
+                Value = value
+            });
+        }
+
         public override Task<GetTraceReply> GetTrace(GetTraceRequest request,
             ServerCallContext context)
         {

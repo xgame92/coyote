@@ -53,6 +53,12 @@ service Scheduler {
   // Only operations that are not blocked nor completed can be scheduled.
   rpc ScheduleNext (ScheduleNextRequest) returns (ScheduleNextReply);
 
+  // Returns a controlled nondeterministic boolean value.
+  rpc GetNextBoolean (GetNextBooleanRequest) returns (GetNextBooleanReply);
+  
+  // Returns a controlled nondeterministic integer value chosen from the [0, max_value) range.
+  rpc GetNextInteger (GetNextIntegerRequest) returns (GetNextIntegerReply);
+
   // Returns a trace that can be used to replay a schedule.
   rpc GetTrace (GetTraceRequest) returns (GetTraceReply);
 }
@@ -213,6 +219,31 @@ message ScheduleNextReply {
   uint32 error_code = 1;
   // The next operation to schedule, if any.
   string next_operation_id = 2;
+}
+
+// The get next boolean request message.
+message GetNextBooleanRequest {
+  string scheduler_id = 1;
+}
+
+// The get next integer response message.
+message GetNextBooleanReply {
+  uint32 error_code = 1;
+  // The next boolean value.
+  bool value = 2;
+}
+
+// The get next boolean request message.
+message GetNextIntegerRequest {
+  string scheduler_id = 1;
+  int32 max_value = 2;
+}
+
+// The get next integer response message.
+message GetNextIntegerReply {
+  uint32 error_code = 1;
+  // The next integer value.
+  int32 value = 2;
 }
 
 // The get trace request message.
