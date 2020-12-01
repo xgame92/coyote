@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Grpc.Core;
+using Microsoft.Coyote.SystematicTesting;
 using Microsoft.Coyote.SystematicTesting.Strategies;
 using Microsoft.Extensions.Logging;
 
@@ -28,13 +29,46 @@ namespace Microsoft.Coyote.TestService
 
         public override Task<InitializeReply> Initialize(InitializeRequest request, ServerCallContext context)
         {
-            Guid schedulerId = Guid.NewGuid();
+            if (!Guid.TryParse(request.SchedulerId, out Guid schedulerId))
+            {
+                schedulerId = Guid.NewGuid();
+            }
+
             var configuration = Configuration.Create();
-            var randomValueGenerator = new RandomValueGenerator(configuration);
-            var strategy = new RandomStrategy(configuration.MaxFairSchedulingSteps, randomValueGenerator);
+
+            SchedulingStrategy strategy;
+            if (request.StrategyType is "replay")
+            {
+                var trace = request.Trace.Split(new string[] { "," }, StringSplitOptions.None);
+                ScheduleTrace schedule = new ScheduleTrace(trace);
+                strategy = new ReplayStrategy(configuration, schedule, false);
+            }
+            else if (request.StrategyType is "probabilistic")
+            {
+                strategy = new ProbabilisticRandomStrategy(configuration.MaxFairSchedulingSteps,
+                    configuration.StrategyBound, new RandomValueGenerator(configuration));
+            }
+            else if (request.StrategyType is "fairpct")
+            {
+                var randomValueGenerator = new RandomValueGenerator(configuration);
+                var prefixLength = configuration.SafetyPrefixBound is 0 ?
+                    configuration.MaxUnfairSchedulingSteps : configuration.SafetyPrefixBound;
+                var prefixStrategy = new PCTStrategy(prefixLength, configuration.StrategyBound, randomValueGenerator);
+                var suffixStrategy = new RandomStrategy(configuration.MaxFairSchedulingSteps, randomValueGenerator);
+                strategy = new ComboStrategy(prefixStrategy, suffixStrategy);
+            }
+            else if (request.StrategyType is "pct")
+            {
+                strategy = new PCTStrategy(configuration.MaxUnfairSchedulingSteps, configuration.StrategyBound,
+                    new RandomValueGenerator(configuration));
+            }
+            else
+            {
+                strategy = new RandomStrategy(configuration.MaxFairSchedulingSteps, new RandomValueGenerator(configuration));
+            }
 
             this.Logger.LogInformation("Creating scheduler '{0}' and strategy {1}.", schedulerId, strategy.GetDescription());
-            this.Context.CreateScheduler(schedulerId, strategy, this.Logger);
+            this.Context.GetOrCreateScheduler(schedulerId, strategy, this.Logger);
             return Task.FromResult(new InitializeReply
             {
                 ErrorCode = (uint)ErrorCode.Success,
@@ -109,6 +143,48 @@ namespace Microsoft.Coyote.TestService
             });
         }
 
+        public override Task<WaitResourceReply> WaitResource(WaitResourceRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            Guid resourceId = Guid.Parse(request.ResourceId);
+            this.Logger.LogInformation("Waiting resource '{0}' in scheduler '{1}'", resourceId, schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            Guid nextOperationId = scheduler.WaitResource(resourceId);
+            return Task.FromResult(new WaitResourceReply
+            {
+                ErrorCode = (uint)ErrorCode.Success,
+                NextOperationId = nextOperationId.ToString()
+            });
+        }
+
+        public override Task<SignalOperationReply> SignalOperation(SignalOperationRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            Guid resourceId = Guid.Parse(request.ResourceId);
+            Guid operationId = Guid.Parse(request.OperationId);
+            this.Logger.LogInformation("Signaling operation '{0}' waiting resource '{1}' in scheduler '{2}'",
+                operationId, resourceId, schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            scheduler.SignalOperation(operationId, resourceId);
+            return Task.FromResult(new SignalOperationReply
+            {
+                ErrorCode = (uint)ErrorCode.Success
+            });
+        }
+
+        public override Task<SignalOperationsReply> SignalOperations(SignalOperationsRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            Guid resourceId = Guid.Parse(request.ResourceId);
+            this.Logger.LogInformation("Signaling all operations waiting resource '{0}' in scheduler '{1}'", resourceId, schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            scheduler.SignalOperations(resourceId);
+            return Task.FromResult(new SignalOperationsReply
+            {
+                ErrorCode = (uint)ErrorCode.Success
+            });
+        }
+
         public override Task<CompleteOperationReply> CompleteOperation(CompleteOperationRequest request, ServerCallContext context)
         {
             Guid schedulerId = Guid.Parse(request.SchedulerId);
@@ -123,6 +199,32 @@ namespace Microsoft.Coyote.TestService
             });
         }
 
+        public override Task<CreateResourceReply> CreateResource(CreateResourceRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            Guid resourceId = Guid.Parse(request.ResourceId);
+            this.Logger.LogInformation("Creating resource '{0}' in scheduler '{1}'", resourceId, schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            scheduler.CreateResource(resourceId);
+            return Task.FromResult(new CreateResourceReply
+            {
+                ErrorCode = (uint)ErrorCode.Success
+            });
+        }
+
+        public override Task<DeleteResourceReply> DeleteResource(DeleteResourceRequest request, ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            Guid resourceId = Guid.Parse(request.ResourceId);
+            this.Logger.LogInformation("Deleting resource '{0}' in scheduler '{1}'", resourceId, schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            scheduler.DeleteResource(resourceId);
+            return Task.FromResult(new DeleteResourceReply
+            {
+                ErrorCode = (uint)ErrorCode.Success
+            });
+        }
+
         public override Task<ScheduleNextReply> ScheduleNext(ScheduleNextRequest request, ServerCallContext context)
         {
             Guid schedulerId = Guid.Parse(request.SchedulerId);
@@ -133,6 +235,20 @@ namespace Microsoft.Coyote.TestService
             {
                 ErrorCode = (uint)ErrorCode.Success,
                 NextOperationId = nextOperationId.ToString()
+            });
+        }
+
+        public override Task<GetTraceReply> GetTrace(GetTraceRequest request,
+            ServerCallContext context)
+        {
+            Guid schedulerId = Guid.Parse(request.SchedulerId);
+            this.Logger.LogInformation("Scheduling next operation in scheduler '{0}'.", schedulerId);
+            var scheduler = this.Context.GetScheduler(schedulerId);
+            string trace = scheduler.GetTrace();
+            return Task.FromResult(new GetTraceReply
+            {
+                ErrorCode = (uint)ErrorCode.Success,
+                Trace = trace
             });
         }
     }

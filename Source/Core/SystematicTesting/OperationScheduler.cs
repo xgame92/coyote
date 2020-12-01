@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -108,14 +107,13 @@ namespace Microsoft.Coyote.SystematicTesting
         /// <summary>
         /// Initializes a new instance of the <see cref="OperationScheduler"/> class.
         /// </summary>
-        internal OperationScheduler(CoyoteRuntime runtime, SchedulingStrategy strategy,
-            ScheduleTrace trace, Configuration configuration)
+        internal OperationScheduler(CoyoteRuntime runtime, SchedulingStrategy strategy, Configuration configuration)
         {
             this.Configuration = configuration;
             this.Runtime = runtime;
             this.Strategy = strategy;
             this.OperationMap = new Dictionary<ulong, AsyncOperation>();
-            this.ScheduleTrace = trace;
+            this.ScheduleTrace = new ScheduleTrace();
             this.SyncObject = new object();
             this.CompletionSource = new TaskCompletionSource<bool>();
             this.IsProgramExecuting = true;

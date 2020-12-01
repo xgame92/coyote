@@ -175,8 +175,7 @@ namespace Microsoft.Coyote.Runtime
                 strategy = new TemperatureCheckingStrategy(configuration, this.SpecificationEngine, strategy);
             }
 
-            var scheduleTrace = new ScheduleTrace();
-            this.Scheduler = new OperationScheduler(this, strategy, scheduleTrace, configuration);
+            this.Scheduler = new OperationScheduler(this, strategy, configuration);
             this.ValueGenerator = valueGenerator;
 
             this.DefaultActorExecutionContext = this.IsControlled ?

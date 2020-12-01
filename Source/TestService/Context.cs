@@ -27,9 +27,9 @@ namespace Microsoft.Coyote.TestService
         }
 
         /// <summary>
-        /// Creates a new scheduler with the specified strategy, or returns an existing one if the id already exists.
+        /// Returns the scheduler with the specified id, if it exists, or creates a new scheduler with the specified configuration.
         /// </summary>
-        internal RemoteScheduler CreateScheduler(Guid schedulerId, SchedulingStrategy strategy, ILogger logger) =>
+        internal RemoteScheduler GetOrCreateScheduler(Guid schedulerId, SchedulingStrategy strategy, ILogger logger) =>
             this.SchedulerMap.GetOrAdd(schedulerId, id => new RemoteScheduler(id, strategy, logger));
 
         /// <summary>

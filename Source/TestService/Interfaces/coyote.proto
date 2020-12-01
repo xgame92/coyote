@@ -26,22 +26,45 @@ service Scheduler {
   // Starts executing the operation with the specified id.
   rpc StartOperation (StartOperationRequest) returns (StartOperationReply);
 
-  // Waits until the operation with the specified id has completed.
+  // Blocks the currently scheduled operation until the operation with the specified id has completed
+  // and schedules the next operation.
   rpc WaitOperation (WaitOperationRequest) returns (WaitOperationReply);
+
+  // Blocks the currently scheduled operation until the resource with the specified id to become available
+  // and schedules the next operation.
+  rpc WaitResource (WaitResourceRequest) returns (WaitResourceReply);
+
+  // Signals the operation with the specified id that the resource with the specified id is available.
+  rpc SignalOperation (SignalOperationRequest) returns (SignalOperationReply);
+
+  // Signals all waiting operations that the resource with the specified id is available.
+  rpc SignalOperations (SignalOperationsRequest) returns (SignalOperationsReply);
 
   // Completes executing the operation with the specified id and schedules the next operation.
   rpc CompleteOperation (CompleteOperationRequest) returns (CompleteOperationReply);
 
+  // Creates a new resource with the specified id.
+  rpc CreateResource (CreateResourceRequest) returns (CreateResourceReply);
+
+  // Deletes the resource with the specified id.
+  rpc DeleteResource (DeleteResourceRequest) returns (DeleteResourceReply);
+
   // Schedules the next operation, which can include the currently executing operation.
   // Only operations that are not blocked nor completed can be scheduled.
   rpc ScheduleNext (ScheduleNextRequest) returns (ScheduleNextReply);
+
+  // Returns a trace that can be used to replay a schedule.
+  rpc GetTrace (GetTraceRequest) returns (GetTraceReply);
 }
 
 // The initialize scheduler request message containing the scheduler configuration.
 message InitializeRequest {
-  string strategy_type = 1;
-  uint64 strategy_bound = 2;
-  uint64 random_seed = 3;
+  string scheduler_id = 1;
+  string strategy_type = 2;
+  uint32 max_steps = 3;
+  uint64 strategy_bound = 4;
+  string trace = 5;
+  uint64 random_seed = 6;
 }
 
 // The initialize scheduler response message containing the scheduler id.
@@ -55,7 +78,7 @@ message AttachRequest {
   string scheduler_id = 1;
 }
 
-// The attach scheduler response message containing the error code.
+// The attach scheduler response message.
 message AttachReply {
   uint32 error_code = 1;
   // The current iteration id.
@@ -69,7 +92,7 @@ message DetachRequest {
   string scheduler_id = 1;
 }
 
-// The detach scheduler response message containing the error code.
+// The detach scheduler response message.
 message DetachReply {
   uint32 error_code = 1;
 }
@@ -80,7 +103,7 @@ message CreateOperationRequest {
   string operation_id = 2;
 }
 
-// The create operation response message containing the error code.
+// The create operation response message.
 message CreateOperationReply {
   uint32 error_code = 1;
 }
@@ -91,7 +114,7 @@ message StartOperationRequest {
   string operation_id = 2;
 }
 
-// The start operation response message containing the error code.
+// The start operation response message.
 message StartOperationReply {
   uint32 error_code = 1;
 }
@@ -102,11 +125,47 @@ message WaitOperationRequest {
   string operation_id = 2;
 }
 
-// The wait operation response message containing the error code.
+// The wait operation response message.
 message WaitOperationReply {
   uint32 error_code = 1;
   // The next operation to schedule, if any.
   string next_operation_id = 2;
+}
+
+// The wait resource request message containing the scheduler id and resource id.
+message WaitResourceRequest {
+  string scheduler_id = 1;
+  string resource_id = 2;
+}
+
+// The wait resource response message.
+message WaitResourceReply {
+  uint32 error_code = 1;
+  // The next operation to schedule, if any.
+  string next_operation_id = 2;
+}
+
+// The signal operation request message containing the scheduler id and resource id.
+message SignalOperationRequest {
+  string scheduler_id = 1;
+  string resource_id = 2;
+  string operation_id = 3;
+}
+
+// The signal operation response message.
+message SignalOperationReply {
+  uint32 error_code = 1;
+}
+
+// The signal operations request message containing the scheduler id and resource id.
+message SignalOperationsRequest {
+  string scheduler_id = 1;
+  string resource_id = 2;
+}
+
+// The signal operations response message.
+message SignalOperationsReply {
+  uint32 error_code = 1;
 }
 
 // The complete operation request message containing the scheduler id and operation id.
@@ -115,11 +174,33 @@ message CompleteOperationRequest {
   string operation_id = 2;
 }
 
-// The complete operation response message containing the error code.
+// The complete operation response message.
 message CompleteOperationReply {
   uint32 error_code = 1;
   // The next operation to schedule, if any.
   string next_operation_id = 2;
+}
+
+// The create resource request message containing the scheduler id and resource id.
+message CreateResourceRequest {
+  string scheduler_id = 1;
+  string resource_id = 2;
+}
+
+// The create resource response message.
+message CreateResourceReply {
+  uint32 error_code = 1;
+}
+
+// The delete resource request message containing the scheduler id and resource id.
+message DeleteResourceRequest {
+  string scheduler_id = 1;
+  string resource_id = 2;
+}
+
+// The delete resource response message.
+message DeleteResourceReply {
+  uint32 error_code = 1;
 }
 
 // The schedule next request message containing the scheduler id.
@@ -127,9 +208,20 @@ message ScheduleNextRequest {
   string scheduler_id = 1;
 }
 
-// The schedule next response message containing the error code.
+// The schedule next response message.
 message ScheduleNextReply {
   uint32 error_code = 1;
   // The next operation to schedule, if any.
   string next_operation_id = 2;
+}
+
+// The get trace request message.
+message GetTraceRequest {
+  string scheduler_id = 1;
+}
+
+// The get trace response message.
+message GetTraceReply {
+  uint32 error_code = 1;
+  string trace = 2;
 }

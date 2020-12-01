@@ -928,7 +928,7 @@ namespace Microsoft.Coyote.SystematicTesting
         /// </summary>
         private void ConstructReproducibleTrace(CoyoteRuntime runtime)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
 
             if (this.Strategy.IsFair())
             {
@@ -949,26 +949,9 @@ namespace Microsoft.Coyote.SystematicTesting
                     Append(Environment.NewLine);
             }
 
-            for (int idx = 0; idx < runtime.Scheduler.ScheduleTrace.Count; idx++)
+            if (runtime.Scheduler.ScheduleTrace.Count > 0)
             {
-                ScheduleStep step = runtime.Scheduler.ScheduleTrace[idx];
-                if (step.Type == ScheduleStepType.SchedulingChoice)
-                {
-                    stringBuilder.Append($"({step.ScheduledOperationId})");
-                }
-                else if (step.BooleanChoice != null)
-                {
-                    stringBuilder.Append(step.BooleanChoice.Value);
-                }
-                else
-                {
-                    stringBuilder.Append(step.IntegerChoice.Value);
-                }
-
-                if (idx < runtime.Scheduler.ScheduleTrace.Count - 1)
-                {
-                    stringBuilder.Append(Environment.NewLine);
-                }
+                stringBuilder.Append(runtime.Scheduler.ScheduleTrace.GetText(Environment.NewLine));
             }
 
             this.ReproducibleTrace = stringBuilder.ToString();

@@ -29,9 +29,19 @@ namespace Microsoft.Coyote.TestService
         private readonly SchedulingStrategy Strategy;
 
         /// <summary>
+        /// The program schedule trace.
+        /// </summary>
+        private readonly ScheduleTrace ScheduleTrace;
+
+        /// <summary>
         /// Map from unique operation ids to operations.
         /// </summary>
         private readonly ConcurrentDictionary<Guid, RemoteOperation> OperationMap;
+
+        /// <summary>
+        /// Map from unique resource ids to resources.
+        /// </summary>
+        private readonly ConcurrentDictionary<Guid, RemoteResource> ResourceMap;
 
         /// <summary>
         /// Set of enabled operations.
@@ -85,7 +95,9 @@ namespace Microsoft.Coyote.TestService
         {
             this.Id = id;
             this.Strategy = strategy;
+            this.ScheduleTrace = new ScheduleTrace();
             this.OperationMap = new ConcurrentDictionary<Guid, RemoteOperation>();
+            this.ResourceMap = new ConcurrentDictionary<Guid, RemoteResource>();
             this.EnabledOperations = new HashSet<RemoteOperation>();
             this.MainOperationId = Guid.NewGuid();
             this.OperationSequenceIdCounter = 0;
@@ -104,11 +116,12 @@ namespace Microsoft.Coyote.TestService
             lock (this.SyncObject)
             {
                 this.IsAttached = true;
+                this.ScheduleTrace.Clear();
 
-                this.Logger.LogInformation("Creating main operation with id '{0}'.", this.MainOperationId);
+                this.Logger.LogDebug("Creating main operation with id '{0}'.", this.MainOperationId);
                 this.CreateOperationInner(this.MainOperationId);
 
-                this.Logger.LogInformation("Starting main operation with id '{0}'.", this.MainOperationId);
+                this.Logger.LogDebug("Starting main operation with id '{0}'.", this.MainOperationId);
                 this.StartOperationInner(this.MainOperationId);
 
                 return this.MainOperationId;
@@ -122,7 +135,7 @@ namespace Microsoft.Coyote.TestService
         {
             lock (this.SyncObject)
             {
-                this.Logger.LogInformation("Detaching all operations.");
+                this.Logger.LogDebug("Detaching all operations.");
 
                 this.IsAttached = false;
 
@@ -131,7 +144,7 @@ namespace Microsoft.Coyote.TestService
                     RemoteOperation op = kvp.Value;
                     if (!op.IsCompleted)
                     {
-                        this.Logger.LogInformation("Detaching the operation with id '{0}'.", op.Id);
+                        this.Logger.LogDebug("Detaching the operation with id '{0}'.", op.Id);
 
                         // If the operation has not already completed, then cancel it.
                         // op->is_scheduled = true;
@@ -140,8 +153,8 @@ namespace Microsoft.Coyote.TestService
                 }
 
                 this.OperationMap.Clear();
+                this.ResourceMap.Clear();
                 this.EnabledOperations.Clear();
-                // resource_map.clear();
                 this.OperationSequenceIdCounter = 0;
                 this.IterationCount++;
             }
@@ -197,28 +210,67 @@ namespace Microsoft.Coyote.TestService
         }
 
         /// <summary>
-        /// Wait for the specified operation to complete.
+        /// Waits for the specified operation to complete and returns the next operation to schedule.
         /// </summary>
         internal Guid WaitOperation(Guid operationId)
         {
             lock (this.SyncObject)
             {
-                this.OperationMap.TryGetValue(operationId, out RemoteOperation waitOp);
-                if (!waitOp.IsCompleted)
+                this.OperationMap.TryGetValue(operationId, out RemoteOperation op);
+                if (!op.IsCompleted)
                 {
-                    this.ScheduledOperation.WaitOperationCompletes(waitOp);
+                    this.ScheduledOperation.WaitOperationCompletes(op);
 
                     // Waiting for the operation to complete, so schedule the next enabled operation.
                     return this.ScheduleNextInner();
                 }
 
-                this.Logger.LogInformation("[Debug-1] Scheduling operation with id '{0}'.", operationId);
                 return this.ScheduledOperation.Guid;
             }
         }
 
         /// <summary>
-        /// Complete the specified operation.
+        /// Waits for the specified resource to get released and returns the next operation to schedule.
+        /// </summary>
+        internal Guid WaitResource(Guid resourceId)
+        {
+            lock (this.SyncObject)
+            {
+                this.ResourceMap.TryGetValue(resourceId, out RemoteResource resource);
+                this.ScheduledOperation.WaitResourceSignal(resource);
+
+                // Waiting for the resource to signal, so schedule the next enabled operation.
+                return this.ScheduleNextInner();
+            }
+        }
+
+        /// <summary>
+        /// Signals the specified waiting operation that the specified resource is released.
+        /// </summary>
+        internal void SignalOperation(Guid operationId, Guid resourceId)
+        {
+            lock (this.SyncObject)
+            {
+                this.ResourceMap.TryGetValue(resourceId, out RemoteResource resource);
+                this.OperationMap.TryGetValue(operationId, out RemoteOperation op);
+                resource.Signal(op);
+            }
+        }
+
+        /// <summary>
+        /// Signals all waiting operations that the specified resource is released.
+        /// </summary>
+        internal void SignalOperations(Guid resourceId)
+        {
+            lock (this.SyncObject)
+            {
+                this.ResourceMap.TryGetValue(resourceId, out RemoteResource resource);
+                resource.SignalAll();
+            }
+        }
+
+        /// <summary>
+        /// Completes the specified operation and returns the next operation to schedule.
         /// </summary>
         internal Guid CompleteOperation(Guid operationId)
         {
@@ -232,33 +284,21 @@ namespace Microsoft.Coyote.TestService
             }
         }
 
-        //internal void CreateResource(Guid resourceId)
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
+        internal void CreateResource(Guid resourceId)
+        {
+            lock (this.SyncObject)
+            {
+                this.ResourceMap.GetOrAdd(resourceId, id => new RemoteResource(id));
+            }
+        }
 
-        //internal void WaitResource(Guid resourceId)
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
-
-        //internal void SignalResource(Guid resourceId)
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
-
-        //internal void DeleteResource(Guid resourceId)
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
+        internal void DeleteResource(Guid resourceId)
+        {
+            lock (this.SyncObject)
+            {
+                this.ResourceMap.TryRemove(resourceId, out RemoteResource _);
+            }
+        }
 
         internal Guid ScheduleNext()
         {
@@ -273,20 +313,19 @@ namespace Microsoft.Coyote.TestService
             // Check if the schedule has finished.
             if (this.EnabledOperations.Count is 0)
             {
-                this.Logger.LogInformation("[Debug-2] Scheduling operation with id '{0}'.", Guid.Empty);
                 return Guid.Empty;
             }
 
             // Choose the next operation to schedule.
             if (!this.Strategy.GetNextOperation(this.EnabledOperations, this.ScheduledOperation, false, out AsyncOperation next))
             {
-                this.Logger.LogInformation("[Debug-3] Scheduling operation with id '{0}'.", Guid.Empty);
                 return Guid.Empty;
             }
 
+            this.ScheduleTrace.AddSchedulingChoice(next.Id);
+
             // var previousOp = this.ScheduledOperation;
             this.ScheduledOperation = next as RemoteOperation;
-            this.Logger.LogInformation("[Debug-4] Scheduling operation with id '{0}'.", this.ScheduledOperation.Guid);
             return this.ScheduledOperation.Guid;
         }
 
@@ -294,6 +333,7 @@ namespace Microsoft.Coyote.TestService
         //{
         //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
         //    {
+        //this.ScheduleTrace.AddNondeterministicBooleanChoice(choice);
         //    }
         //}
 
@@ -301,6 +341,7 @@ namespace Microsoft.Coyote.TestService
         //{
         //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
         //    {
+        //this.ScheduleTrace.AddNondeterministicIntegerChoice(choice);
         //    }
         //}
 
@@ -308,21 +349,19 @@ namespace Microsoft.Coyote.TestService
         //{
         //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
         //    {
+        //this.ScheduleTrace.AddNondeterministicIntegerChoice(choice);
         //    }
         //}
 
-        //internal ulong ScheduledOperationId()
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
-
-        //internal int RandomSeed()
-        //{
-        //    if (SchedulerMap.TryGetValue(schedulerId, out OperationScheduler scheduler))
-        //    {
-        //    }
-        //}
+        /// <summary>
+        /// Returns the current trace.
+        /// </summary>
+        internal string GetTrace()
+        {
+            lock (this.SyncObject)
+            {
+                return this.ScheduleTrace.GetText(",");
+            }
+        }
     }
 }

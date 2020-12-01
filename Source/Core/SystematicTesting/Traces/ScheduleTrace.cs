@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Microsoft.Coyote.SystematicTesting
 {
@@ -165,5 +166,41 @@ namespace Microsoft.Coyote.SystematicTesting
 
             this.Steps.Add(step);
         }
+
+        /// <summary>
+        /// Returns a string that represents the trace.
+        /// </summary>
+        internal string GetText(string delimeter)
+        {
+            var text = new StringBuilder();
+            for (int idx = 0; idx < this.Count; idx++)
+            {
+                ScheduleStep step = this[idx];
+                if (step.Type == ScheduleStepType.SchedulingChoice)
+                {
+                    text.Append($"({step.ScheduledOperationId})");
+                }
+                else if (step.BooleanChoice != null)
+                {
+                    text.Append(step.BooleanChoice.Value);
+                }
+                else
+                {
+                    text.Append(step.IntegerChoice.Value);
+                }
+
+                if (idx < this.Count - 1)
+                {
+                    text.Append(delimeter);
+                }
+            }
+
+            return text.ToString();
+        }
+
+        /// <summary>
+        /// Clears the trace.
+        /// </summary>
+        internal void Clear() => this.Steps.Clear();
     }
 }

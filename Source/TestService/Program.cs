@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Coyote.TestService
 {
@@ -23,6 +24,9 @@ namespace Microsoft.Coyote.TestService
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+// #if !DEBUG
+//                    webBuilder.ConfigureLogging(configureLogging => configureLogging.ClearProviders());
+// #endif
                     webBuilder.ConfigureKestrel(options =>
                     {
                         // Setup a HTTP/2 endpoint without TLS.

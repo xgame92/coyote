@@ -60,11 +60,35 @@ namespace Microsoft.Coyote.TestService
         }
 
         /// <summary>
+        /// Enables this operation.
+        /// </summary>
+        internal void Enable()
+        {
+            this.Status = AsyncOperationStatus.Enabled;
+            this.EnabledOperations.Add(this);
+        }
+
+        /// <inheritdoc/>
+        internal override bool TryEnable()
+        {
+            this.Logger.LogDebug("Try enable operation '{0}' with status '{1}'.", this.Guid, this.Status);
+            if ((this.Status is AsyncOperationStatus.BlockedOnWaitAll && this.WaitOperations.All(op => op.IsCompleted)) ||
+                (this.Status is AsyncOperationStatus.BlockedOnWaitAny && this.WaitOperations.Any(op => op.IsCompleted)))
+            {
+                this.Enable();
+                this.WaitOperations.Clear();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Blocks this operation until the specified operation completes.
         /// </summary>
         internal void WaitOperationCompletes(RemoteOperation op)
         {
-            this.Logger.LogInformation("Operation '{0}' is waiting for operation '{1}'.", this.Guid, op.Guid);
+            this.Logger.LogDebug("Operation '{0}' is waiting for operation '{1}'.", this.Guid, op.Guid);
             this.Status = AsyncOperationStatus.BlockedOnWaitAll;
             this.EnabledOperations.Remove(this);
             this.WaitOperations.Add(op);
@@ -85,7 +109,7 @@ namespace Microsoft.Coyote.TestService
                 {
                     if (!op.IsCompleted)
                     {
-                        this.Logger.LogInformation("Operation '{0}' is waiting for operation '{1}'.", this.Guid, op.Guid);
+                        this.Logger.LogDebug("Operation '{0}' is waiting for operation '{1}'.", this.Guid, op.Guid);
                         this.WaitOperations.Add(op);
                         op.SignalOperations.Add(this);
                     }
@@ -100,27 +124,14 @@ namespace Microsoft.Coyote.TestService
         }
 
         /// <summary>
-        /// Enables this operation.
+        /// Blocks this operation until the specified resource signals.
         /// </summary>
-        internal void Enable()
+        internal void WaitResourceSignal(RemoteResource resource)
         {
-            this.Status = AsyncOperationStatus.Enabled;
-            this.EnabledOperations.Add(this);
-        }
-
-        /// <inheritdoc/>
-        internal override bool TryEnable()
-        {
-            this.Logger.LogInformation("Try enable operation '{0}' with status '{1}'.", this.Guid, this.Status);
-            if ((this.Status is AsyncOperationStatus.BlockedOnWaitAll && this.WaitOperations.All(op => op.IsCompleted)) ||
-                (this.Status is AsyncOperationStatus.BlockedOnWaitAny && this.WaitOperations.Any(op => op.IsCompleted)))
-            {
-                this.Enable();
-                this.WaitOperations.Clear();
-                return true;
-            }
-
-            return false;
+            this.Logger.LogDebug("Operation '{0}' is waiting for resource '{1}'.", this.Guid, resource.Id);
+            this.Status = AsyncOperationStatus.BlockedOnResource;
+            this.EnabledOperations.Remove(this);
+            resource.Register(this);
         }
 
         /// <summary>
