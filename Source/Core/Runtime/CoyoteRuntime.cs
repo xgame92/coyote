@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -142,6 +143,12 @@ namespace Microsoft.Coyote.Runtime
         internal event OnFailureHandler OnFailure;
 
         /// <summary>
+        /// HashMap used for detecting data races in Systems.Collections.Generic.*.
+        /// </summary>
+        public ConditionalWeakTable<object, object> Cwt = new ConditionalWeakTable<object, object>();
+        public static Hashtable RaceMap = null;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CoyoteRuntime"/> class.
         /// </summary>
         internal CoyoteRuntime(Configuration configuration, IRandomValueGenerator valueGenerator)
@@ -194,7 +201,7 @@ namespace Microsoft.Coyote.Runtime
 #if !DEBUG
         [DebuggerHidden]
 #endif
-        internal void RunTest(Delegate testMethod, string testName)
+        internal void RunTest(Delegate testMethod, string testName, ISet<Action> testInits = null, ISet<Action> testCallbacks = null)
         {
             testName = string.IsNullOrEmpty(testName) ? string.Empty : $" '{testName}'";
             this.Logger.WriteLine($"<TestLog> Running test{testName}.");
@@ -211,6 +218,13 @@ namespace Microsoft.Coyote.Runtime
                     AssignAsyncControlFlowRuntime(this);
 
                     this.Scheduler.StartOperation(op);
+
+                    // Invoke init methods before every iteration.
+                    // Add a comment!
+                    foreach (var callback in testInits)
+                    {
+                        callback();
+                    }
 
                     Task testMethodTask = null;
                     if (testMethod is Action<IActorRuntime> actionWithRuntime)
@@ -254,6 +268,12 @@ namespace Microsoft.Coyote.Runtime
                         else if (testMethodTask.IsCanceled)
                         {
                             throw new TaskCanceledException(testMethodTask);
+                        }
+
+                        // Invoke cleanup methods after every iteration.
+                        foreach (var callback in testCallbacks)
+                        {
+                            callback();
                         }
                     }
 
@@ -1673,6 +1693,99 @@ namespace Microsoft.Coyote.Runtime
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+#pragma warning disable CA1801 // Review unused parameters
+#pragma warning disable CA1822 // Mark members as static
+        internal void DetectRace(int hc, bool is_read, string object_signature = "")
+#pragma warning restore CA1822 // Mark members as static
+#pragma warning restore CA1801 // Review unused parameters
+        {
+            if (RaceMap == null)
+            {
+                // Set initial size of our internal HashMap to 1000.
+                // RaceMap: <ulong>  ---> <int, int>
+                RaceMap = new Hashtable(1000);
+            }
+
+            string error_st = null;
+
+            // If we are coming across this object for the first time, add it to the RaceMap
+            if (!RaceMap.ContainsKey(hc))
+            {
+                RaceMap.Add(hc, new KeyValuePair<int, int>(0, 0));
+            }
+
+            // Retrive the number of Readers and Writers.
+            KeyValuePair<int, int> kvp = (KeyValuePair<int, int>)RaceMap[hc];
+            int numReaders = kvp.Key;
+            int numWriters = kvp.Value;
+
+            // Invariant
+            System.Diagnostics.Debug.Assert(numReaders >= 0 && numWriters >= 0, "DetectRace: Invariant failed");
+
+            if (is_read)
+            {
+                // It is a reader. We jsut need to check that there is no writer
+                // concurrently writing to thsi object.
+
+                if (numWriters > 0)
+                {
+                    // This should be a race between a reader and a writer
+                    error_st = new string("Race found between a reader and a writer on the object: ".ToCharArray());
+                }
+                else
+                {
+                    numReaders++;
+                    RaceMap.Remove(hc);
+                    RaceMap.Add(hc, new KeyValuePair<int, int>(numReaders, numWriters));
+
+                    this.ScheduleNextOperation();
+
+                    numReaders--;
+                    RaceMap.Remove(hc);
+                    RaceMap.Add(hc, new KeyValuePair<int, int>(numReaders, numWriters));
+                }
+            }
+            else
+            {
+                // I'm a writer. We need to make sure that there is no reader or a writer
+                // concurrently accessing the object.
+
+                if (numWriters > 0 || numReaders > 0)
+                {
+                    if (numReaders > 0)
+                    {
+                        error_st = new string("Race found between a Writer and a reader on the object: ".ToCharArray());
+                    }
+                    else
+                    {
+                        error_st = new string("Race found between a Writer and another Writer on the object: ".ToCharArray());
+                    }
+                }
+                else
+                {
+                    numWriters++;
+                    RaceMap.Remove(hc);
+                    RaceMap.Add(hc, new KeyValuePair<int, int>(numReaders, numWriters));
+
+                    this.ScheduleNextOperation();
+
+                    numWriters--;
+                    RaceMap.Remove(hc);
+                    RaceMap.Add(hc, new KeyValuePair<int, int>(numReaders, numWriters));
+                }
+            }
+
+            if (error_st != null)
+            {
+                error_st += object_signature + "\n";
+
+                StackTrace st = new StackTrace(true);
+                error_st += st.ToString();
+                // There is some race. Report the error.
+                this.NotifyAssertionFailure(error_st);
+            }
         }
     }
 }

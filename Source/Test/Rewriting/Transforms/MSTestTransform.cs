@@ -25,18 +25,121 @@ namespace Microsoft.Coyote.Rewriting
         private ModuleDefinition Module;
 
         /// <summary>
+        /// MethodReference of ClassInit method within a test class.
+        /// </summary>
+        private MethodDefinition ClassInitMethod;
+
+        /// <summary>
+        /// MethodReference of ClassCleanup method within a test class.
+        /// </summary>
+        private MethodDefinition ClassCleanupMethod;
+
+        /// <summary>
+        /// MethodReference of TestInitialize method within a test class.
+        /// </summary>
+        private MethodDefinition TestInitMethod;
+
+        /// <summary>
+        /// MethodReference of TestCleanupMethod method within a test class.
+        /// </summary>
+        private MethodDefinition TestCleanupMethod;
+
+        private const string TestClassAttribute = "Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute";
+        private const string TestInitAttribute = "Microsoft.VisualStudio.TestTools.UnitTesting.TestInitializeAttribute";
+        private const string TestCleanupAttribute = "Microsoft.VisualStudio.TestTools.UnitTesting.TestCleanupAttribute";
+        private const string ClassInitAttribute = "Microsoft.VisualStudio.TestTools.UnitTesting.ClassInitializeAttribute";
+        private const string ClassCleanupAttribute = "Microsoft.VisualStudio.TestTools.UnitTesting.ClassCleanupAttribute";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MSTestTransform"/> class.
         /// </summary>
         internal MSTestTransform(Configuration configuration, ILogger logger)
             : base(logger)
         {
             this.Configuration = configuration;
+
+            this.ClassInitMethod = null;
+            this.ClassCleanupMethod = null;
+            this.TestInitMethod = null;
+            this.TestCleanupMethod = null;
         }
 
         /// <inheritdoc/>
         internal override void VisitModule(ModuleDefinition module)
         {
             this.Module = module;
+        }
+
+        /// <inheritdoc/>
+        internal override void VisitType(TypeDefinition type)
+        {
+            if (type.IsAbstract)
+            {
+                return;
+            }
+
+            this.ClassInitMethod = null;
+            this.ClassCleanupMethod = null;
+            this.TestInitMethod = null;
+            this.TestCleanupMethod = null;
+
+            if (type.CustomAttributes.Any(p => p.AttributeType.FullName == TestClassAttribute))
+            {
+                foreach (var method in type.Methods)
+                {
+                    if (method.CustomAttributes.Count > 0)
+                    {
+                        if (method.CustomAttributes.Any(p => p.AttributeType.FullName == TestCleanupAttribute))
+                        {
+                            System.Diagnostics.Debug.Assert(this.TestCleanupMethod == null, "TestCleanupMethod not null");
+                            this.TestCleanupMethod = method;
+                        }
+
+                        if (method.CustomAttributes.Any(p => p.AttributeType.FullName == TestInitAttribute))
+                        {
+                            System.Diagnostics.Debug.Assert(this.TestInitMethod == null, "TestInitMethod not null");
+                            this.TestInitMethod = method;
+                        }
+
+                        if (method.CustomAttributes.Any(p => p.AttributeType.FullName == ClassCleanupAttribute))
+                        {
+                            System.Diagnostics.Debug.Assert(this.ClassCleanupMethod == null, "ClassCleanupMethod not null");
+                            this.ClassCleanupMethod = method;
+                        }
+
+                        if (method.CustomAttributes.Any(p => p.AttributeType.FullName == ClassInitAttribute))
+                        {
+                            System.Diagnostics.Debug.Assert(this.ClassInitMethod == null, "ClassInitMethod not null");
+                            this.ClassInitMethod = method;
+                        }
+                    }
+                }
+            }
+
+            // Remove TestInitialize and TestCleanup attributes, because now Coyote runtime will call these methods.
+            if (this.TestInitMethod != null)
+            {
+                foreach (var attr in this.TestInitMethod.CustomAttributes)
+                {
+                    if (attr.AttributeType.FullName == TestInitAttribute)
+                    {
+                        this.TestInitMethod.CustomAttributes.Remove(attr);
+                        break;
+                    }
+                }
+            }
+
+            if (this.TestCleanupMethod != null)
+            {
+                foreach (var attr in this.TestCleanupMethod.CustomAttributes)
+                {
+                    if (attr.AttributeType.FullName == TestCleanupAttribute)
+                    {
+                        this.TestCleanupMethod.CustomAttributes.Remove(attr);
+                        break;
+                    }
+                }
+            }
         }
 
         /// <inheritdoc/>
@@ -133,7 +236,7 @@ namespace Microsoft.Coyote.Rewriting
                     typeName == "System.Diagnostics.DebuggerStepThroughAttribute")
                 {
                     method.CustomAttributes.Remove(attr);
-                    testMethod.CustomAttributes.Add(attr);
+                    // testMethod.CustomAttributes.Add(attr);
                 }
             }
 
@@ -142,10 +245,13 @@ namespace Microsoft.Coyote.Rewriting
             method.Body.ExceptionHandlers.Clear();
 
             MethodReference launchMethod = null;
+            MethodReference attachMethod = null;
+
             if (this.Configuration.AttachDebugger)
             {
                 var debuggerType = this.Module.ImportReference(typeof(System.Diagnostics.Debugger)).Resolve();
                 launchMethod = FindMatchingMethod(debuggerType, "Launch");
+                attachMethod = FindMatchingMethod(debuggerType, "Break"); // Udit...
             }
 
             TypeReference actionType;
@@ -181,6 +287,8 @@ namespace Microsoft.Coyote.Rewriting
             // The emitted IL corresponds to a method body such as:
             //   Configuration configuration = Configuration.Create();
             //   TestingEngine engine = TestingEngine.Create(configuration, new Action(Test));
+            //   [engine.RegisterPerIterationInitMethod(new Action(method));]
+            //   [engine.RegisterPerIterationCallBack(new Action(method));]
             //   engine.Run();
             //   engine.ThrowIfBugFound();
             //
@@ -201,6 +309,7 @@ namespace Microsoft.Coyote.Rewriting
             {
                 processor.Emit(OpCodes.Call, this.Module.ImportReference(launchMethod));
                 processor.Emit(OpCodes.Pop);
+                processor.Emit(OpCodes.Call, this.Module.ImportReference(attachMethod));
             }
 
             var defaultConfig = Configuration.Create();
@@ -264,6 +373,33 @@ namespace Microsoft.Coyote.Rewriting
             processor.Emit(OpCodes.Newobj, actionConstructor);
             processor.Emit(OpCodes.Call, createEngineMethod);
             processor.Emit(OpCodes.Dup);
+
+            if (this.TestInitMethod != null)
+            {
+                processor.Emit(OpCodes.Dup);
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldftn, this.TestInitMethod);
+                processor.Emit(OpCodes.Newobj, actionConstructor);
+
+                MethodReference registerPerIterationInitMethod = this.Module.ImportReference(
+                FindMatchingMethod(resolvedEngineType, "RegisterPerIterationInitMethod", this.Module.ImportReference(typeof(Action))));
+
+                processor.Emit(OpCodes.Call, registerPerIterationInitMethod);
+            }
+
+            if (this.TestCleanupMethod != null)
+            {
+                processor.Emit(OpCodes.Dup);
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldftn, this.TestCleanupMethod);
+                processor.Emit(OpCodes.Newobj, actionConstructor);
+
+                MethodReference registerPerIterationCallBack = this.Module.ImportReference(
+                FindMatchingMethod(resolvedEngineType, "RegisterPerIterationCallBack", this.Module.ImportReference(typeof(Action))));
+
+                processor.Emit(OpCodes.Call, registerPerIterationCallBack);
+            }
+
             this.EmitMethodCall(processor, resolvedEngineType, "Run");
             this.EmitMethodCall(processor, resolvedEngineType, "ThrowIfBugFound");
             processor.Emit(OpCodes.Ret);

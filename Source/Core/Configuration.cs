@@ -384,14 +384,14 @@ namespace Microsoft.Coyote
             this.DebugActivityCoverage = false;
 
             this.IsVerbose = false;
-            this.IsDebugVerbosityEnabled = false;
+            this.IsDebugVerbosityEnabled = true;
             this.LogLevel = LogSeverity.Informational;
 
             this.AdditionalCodeCoverageAssemblies = new Dictionary<string, bool>();
 
             this.EnableColoredConsoleOutput = false;
             this.DisableEnvironmentExit = true;
-            this.EnableTelemetry = true;
+            this.EnableTelemetry = false;
             this.PlatformVersion = GetPlatformVersion();
 
             string optout = Environment.GetEnvironmentVariable("COYOTE_CLI_TELEMETRY_OPTOUT");
@@ -427,7 +427,7 @@ namespace Microsoft.Coyote
         /// <param name="probabilityLevel">The probability level.</param>
         public Configuration WithProbabilisticStrategy(uint probabilityLevel = 3)
         {
-            this.SchedulingStrategy = "fairpct";
+            this.SchedulingStrategy = "probabilistic";
             this.StrategyBound = (int)probabilityLevel;
             return this;
         }
