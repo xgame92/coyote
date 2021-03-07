@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Coyote.Actors.Coverage;
@@ -55,6 +56,34 @@ namespace Microsoft.Coyote.SystematicTesting
         internal static TestingProcess Create(Configuration configuration)
         {
             return new TestingProcess(configuration);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestingProcess"/> class.
+        /// </summary>
+        private TestingProcess(Configuration configuration)
+        {
+            this.Name = this.Name + "." + configuration.TestingProcessId;
+
+            if (configuration.SchedulingStrategy is "portfolio")
+            {
+                TestingPortfolio.ConfigureStrategyForCurrentProcess(configuration);
+            }
+
+            if (configuration.RandomGeneratorSeed.HasValue)
+            {
+                configuration.RandomGeneratorSeed = configuration.RandomGeneratorSeed.Value +
+                    (673 * configuration.TestingProcessId);
+            }
+
+            configuration.EnableColoredConsoleOutput = true;
+
+            this.Configuration = configuration;
+
+            // Set a handler for assembly resolution errors.
+            AppDomain.CurrentDomain.AssemblyResolve += this.OnAssemblyResolve;
+
+            this.TestingEngine = TestingEngine.Create(configuration);
         }
 
         /// <summary>
@@ -137,35 +166,6 @@ namespace Microsoft.Coyote.SystematicTesting
 
             this.Disconnect();
             return this.TestingEngine.TestReport.NumOfFoundBugs;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TestingProcess"/> class.
-        /// </summary>
-        private TestingProcess(Configuration configuration)
-        {
-            this.Name = this.Name + "." + configuration.TestingProcessId;
-
-            if (configuration.SchedulingStrategy is "portfolio")
-            {
-                TestingPortfolio.ConfigureStrategyForCurrentProcess(configuration);
-            }
-
-            if (configuration.RandomGeneratorSeed.HasValue)
-            {
-                configuration.RandomGeneratorSeed = configuration.RandomGeneratorSeed.Value +
-                    (673 * configuration.TestingProcessId);
-            }
-
-            configuration.EnableColoredConsoleOutput = true;
-
-            this.Configuration = configuration;
-            this.TestingEngine = TestingEngine.Create(this.Configuration);
-        }
-
-        ~TestingProcess()
-        {
-            this.Terminating = true;
         }
 
         /// <summary>
@@ -360,6 +360,23 @@ namespace Microsoft.Coyote.SystematicTesting
                 this.TestingEngine.Stop();
                 this.Terminating = true;
             }
+        }
+
+        /// <summary>
+        /// Handles assembly resolution failures.
+        /// </summary>
+        private Assembly OnAssemblyResolve(object source, ResolveEventArgs e)
+        {
+            string assembly = e.Name.Split(new[] { ',' })[0] + ".dll";
+            string directory = Path.GetDirectoryName(this.Configuration.AssemblyToBeAnalyzed);
+            string assemblyPath = Path.Combine(directory, assembly);
+            Console.WriteLine("Resolving {0} ({1})", assembly, assemblyPath);
+            return Assembly.LoadFrom(assemblyPath);
+        }
+
+        ~TestingProcess()
+        {
+            this.Terminating = true;
         }
 
         internal class ProgressLock : IDisposable
