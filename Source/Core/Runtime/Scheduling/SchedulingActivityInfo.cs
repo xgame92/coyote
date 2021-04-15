@@ -17,5 +17,15 @@ namespace Microsoft.Coyote.Runtime
         /// Number of scheduling steps since last activity check.
         /// </summary>
         public int StepCount { get; set; }
+
+        public SchedulingActivityInfo()
+        {
+        }
+
+        public SchedulingActivityInfo(int opCount, int stepCount)
+        {
+            this.OperationCount = opCount;
+            this.StepCount = stepCount;
+        }
     }
 }

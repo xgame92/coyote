@@ -249,14 +249,19 @@ namespace Microsoft.Coyote.Rewriting
                 this.EmitMethodCall(processor, resolvedConfigurationType, "WithRandomGeneratorSeed", this.Configuration.RandomGeneratorSeed.Value);
             }
 
-            if (this.Configuration.IsVerbose)
-            {
-                this.EmitMethodCall(processor, resolvedConfigurationType, "WithVerbosityEnabled", this.Configuration.IsVerbose, this.Configuration.LogLevel);
-            }
+            // if (this.Configuration.IsVerbose)
+
+            this.EmitMethodCall(processor, resolvedConfigurationType, "WithVerbosityEnabled", true, this.Configuration.LogLevel);
+            this.EmitMethodCall(processor, resolvedConfigurationType, "WithDebugLoggingEnabled", true);
 
             if (!this.Configuration.EnableTelemetry)
             {
                 this.EmitMethodCall(processor, resolvedConfigurationType, "WithTelemetryEnabled", this.Configuration.EnableTelemetry);
+            }
+
+            if (this.Configuration.IsRelaxedControlledTestingEnabled)
+            {
+                this.EmitMethodCall(processor, resolvedConfigurationType, "WithRelaxedControlledTestingEnabled", this.Configuration.IsRelaxedControlledTestingEnabled);
             }
 
             processor.Emit(OpCodes.Ldarg_0);

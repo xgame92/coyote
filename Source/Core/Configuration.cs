@@ -390,7 +390,7 @@ namespace Microsoft.Coyote
             this.LivenessTemperatureThreshold = 50000;
             this.UserExplicitlySetLivenessTemperatureThreshold = false;
             this.IsProgramStateHashingEnabled = false;
-            this.IsMonitoringEnabledInInProduction = false;
+            this.IsMonitoringEnabledInInProduction = true;
             this.AttachDebugger = false;
 
             this.ScheduleFile = string.Empty;
@@ -408,7 +408,7 @@ namespace Microsoft.Coyote
 
             this.EnableColoredConsoleOutput = false;
             this.DisableEnvironmentExit = true;
-            this.EnableTelemetry = true;
+            this.EnableTelemetry = false;
             this.PlatformVersion = GetPlatformVersion();
 
             string optout = Environment.GetEnvironmentVariable("COYOTE_CLI_TELEMETRY_OPTOUT");
