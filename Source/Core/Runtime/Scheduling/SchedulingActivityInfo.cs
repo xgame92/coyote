@@ -18,14 +18,11 @@ namespace Microsoft.Coyote.Runtime
         /// </summary>
         public int StepCount { get; set; }
 
-        public SchedulingActivityInfo()
-        {
-        }
+        public bool ThrowError { get; private set; }
 
-        public SchedulingActivityInfo(int opCount, int stepCount)
+        public SchedulingActivityInfo(bool throwError = false)
         {
-            this.OperationCount = opCount;
-            this.StepCount = stepCount;
+            this.ThrowError = throwError;
         }
     }
 }

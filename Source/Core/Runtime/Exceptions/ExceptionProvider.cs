@@ -53,8 +53,6 @@ namespace Microsoft.Coyote.Runtime
                 else
                 {
                     CoyoteRuntime.CheckAndSetSchedulerStrategyToDelayFuzzing();
-                    // Immediately throw deadlock error in a separate task.
-                    CoyoteRuntime.Current.InitDeadlockTimer(true);
                 }
             }
         }

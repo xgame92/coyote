@@ -268,7 +268,7 @@ namespace Microsoft.Coyote.Runtime
 
         internal void InitDeadlockTimer(bool immediatelyThrowError = false)
         {
-            this.DeadlockMonitor = immediatelyThrowError ? new Timer(this.CheckIfExecutionHasDeadlocked, new SchedulingActivityInfo(this.Scheduler.StepCount, this.Scheduler.StepCount),
+            this.DeadlockMonitor = immediatelyThrowError ? new Timer(this.CheckIfExecutionHasDeadlocked, new SchedulingActivityInfo(true),
                     Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan) : new Timer(this.CheckIfExecutionHasDeadlocked, new SchedulingActivityInfo(),
                     Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         }
@@ -1531,11 +1531,9 @@ namespace Microsoft.Coyote.Runtime
                     IO.Debug.WriteLine("<ScheduleDebug> Operation '{0}' has status '{1}'.", op.Id, op.Status);
                 }
 
-                next = null;
                 // Choose the next operation to schedule, if there is one enabled.
-                if (this.Scheduler.SchedulingPolicy != SchedulingPolicy.Fuzzing &&
-                    !this.Scheduler.GetNextOperation(ops, current, isYielding, out next) &&
-                    !this.Configuration.IsRelaxedControlledTestingEnabled &&
+                if (!this.Scheduler.GetNextOperation(ops, current, isYielding, out next) &&
+                    this.Configuration.IsRelaxedControlledTestingEnabled &&
                     ops.Any(op => op.IsBlockedOnUncontrolledDependency()))
                 {
                     // At least one operation is blocked due to uncontrolled concurrency. To try defend against
@@ -2046,8 +2044,6 @@ namespace Microsoft.Coyote.Runtime
                 else
                 {
                     CheckAndSetSchedulerStrategyToDelayFuzzing();
-                    // Immediately throw deadlock error in a separate task.
-                    this.InitDeadlockTimer(true);
                 }
             }
         }
@@ -2154,7 +2150,7 @@ namespace Microsoft.Coyote.Runtime
                 }
 
                 SchedulingActivityInfo info = state as SchedulingActivityInfo;
-                if (info.StepCount == this.Scheduler.StepCount)
+                if (info.StepCount == this.Scheduler.StepCount || info.ThrowError)
                 {
                     string msg = "Potential deadlock detected. If you think this is not a deadlock, you can try " +
                         "increase the dealock detection timeout (--deadlock-timeout).";
@@ -2527,10 +2523,16 @@ namespace Microsoft.Coyote.Runtime
         {
             CoyoteRuntime runtime = AsyncLocalInstance.Value;
             if (runtime != null && runtime.Configuration.IsRelaxedControlledTestingEnabled &&
-                runtime.SchedulingPolicy != SchedulingPolicy.Fuzzing)
+                runtime.Scheduler.NewSchedulingPolicy != SchedulingPolicy.Fuzzing)
             {
                 // Change policy to DelayFuzzing.
                 runtime.Scheduler.SetSchedulerStrategyToDelayFuzzing();
+                // Immediately throw deadlock error in a separate task.
+                runtime.InitDeadlockTimer(true);
+
+                // Trigger the time!
+                runtime.DeadlockMonitor?.Change(TimeSpan.FromMilliseconds(10),
+                    Timeout.InfiniteTimeSpan);
             }
         }
 
