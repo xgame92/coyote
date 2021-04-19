@@ -106,6 +106,15 @@ namespace Microsoft.Coyote
         internal bool IsConcurrencyFuzzingEnabled;
 
         /// <summary>
+        /// If this option is enabled, stress testing is enabled.
+        /// </summary>
+        /// <remarks>
+        /// This is an experimental feature.
+        /// </remarks>
+        [DataMember]
+        internal bool IsStressTestingEnabled;
+
+        /// <summary>
         /// If this option is enabled, liveness checking is enabled during systematic testing.
         /// </summary>
         [DataMember]
@@ -371,6 +380,7 @@ namespace Microsoft.Coyote
             this.IncrementalSchedulingSeed = false;
             this.IsRelaxedControlledTestingEnabled = false;
             this.IsConcurrencyFuzzingEnabled = false;
+            this.IsStressTestingEnabled = false;
             this.IsLivenessCheckingEnabled = true;
             this.PerformFullExploration = false;
             this.MaxUnfairSchedulingSteps = 10000;
@@ -530,6 +540,26 @@ namespace Microsoft.Coyote
         public Configuration WithConcurrencyFuzzingEnabled(bool isEnabled = true)
         {
             this.IsConcurrencyFuzzingEnabled = isEnabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Updates the configuration with stress testing enabled or disabled.
+        /// </summary>
+        /// <param name="isEnabled">If true, then stress testing is enabled.</param>
+        /// <remarks>
+        /// This is an experimental feature.
+        /// </remarks>
+        public Configuration WithStressTestingEnabled(bool isEnabled = true)
+        {
+            this.IsStressTestingEnabled = isEnabled;
+
+            if (this.IsStressTestingEnabled)
+            {
+                this.IsConcurrencyFuzzingEnabled = true;
+                this.WithProductionMonitorEnabled(true);
+            }
+
             return this;
         }
 

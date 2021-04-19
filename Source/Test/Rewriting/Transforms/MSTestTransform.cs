@@ -264,6 +264,11 @@ namespace Microsoft.Coyote.Rewriting
                 this.EmitMethodCall(processor, resolvedConfigurationType, "WithRelaxedControlledTestingEnabled", this.Configuration.IsRelaxedControlledTestingEnabled);
             }
 
+            if (this.Configuration.IsConcurrencyFuzzingEnabled)
+            {
+                this.EmitMethodCall(processor, resolvedConfigurationType, "WithConcurrencyFuzzingEnabled", this.Configuration.IsConcurrencyFuzzingEnabled);
+            }
+
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldftn, testMethod);
             processor.Emit(OpCodes.Newobj, actionConstructor);
