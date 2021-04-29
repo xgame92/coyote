@@ -1,12 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
+
 namespace Microsoft.Coyote.Testing.Fuzzing
 {
     /// <summary>
-    /// A simple random fuzzing strategy.
+    /// 10% probability of a random delay.
     /// </summary>
-    internal class RandomStrategy : FuzzingStrategy
+    internal class LowDelayPercentageStrategy : FuzzingStrategy
     {
         /// <summary>
         /// Random value generator.
@@ -24,9 +26,9 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         protected int StepCount;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RandomStrategy"/> class.
+        /// Initializes a new instance of the <see cref="LowDelayPercentageStrategy"/> class.
         /// </summary>
-        internal RandomStrategy(IRandomValueGenerator random, int maxDelays)
+        internal LowDelayPercentageStrategy(IRandomValueGenerator random, int maxDelays)
         {
             this.RandomValueGenerator = random;
             this.MaxSteps = maxDelays;
@@ -35,8 +37,6 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool InitializeNextIteration(uint iteration)
         {
-            // The random strategy just needs to reset the number of scheduled steps during
-            // the current iretation.
             this.StepCount = 0;
             return true;
         }
@@ -44,7 +44,16 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool GetNextDelay(int maxValue, out int next)
         {
-            next = this.RandomValueGenerator.Next(maxValue);
+            // 1% delay probability.
+            if (this.RandomValueGenerator.NextDouble() < 0.01)
+            {
+                next = this.RandomValueGenerator.Next(maxValue);
+            }
+            else
+            {
+                next = 0;
+            }
+
             this.StepCount++;
             return true;
         }
@@ -67,6 +76,6 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         internal override bool IsFair() => true;
 
         /// <inheritdoc/>
-        internal override string GetDescription() => $"random[seed '{this.RandomValueGenerator.Seed}']";
+        internal override string GetDescription() => $"1% delay probability";
     }
 }
