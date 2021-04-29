@@ -51,6 +51,7 @@ namespace Microsoft.Coyote.Tasks
         /// <returns>The synchronized block.</returns>
         protected virtual SynchronizedBlock EnterLock()
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             SystemMonitor.Enter(this.SyncObject, ref this.IsLockTaken);
             return this;
         }
@@ -58,12 +59,20 @@ namespace Microsoft.Coyote.Tasks
         /// <summary>
         /// Notifies a thread in the waiting queue of a change in the locked object's state.
         /// </summary>
-        public virtual void Pulse() => SystemMonitor.Pulse(this.SyncObject);
+        public virtual void Pulse()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            SystemMonitor.Pulse(this.SyncObject);
+        }
 
         /// <summary>
         /// Notifies all waiting threads of a change in the object's state.
         /// </summary>
-        public virtual void PulseAll() => SystemMonitor.PulseAll(this.SyncObject);
+        public virtual void PulseAll()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            SystemMonitor.PulseAll(this.SyncObject);
+        }
 
         /// <summary>
         /// Releases the lock on an object and blocks the current thread until it reacquires
@@ -71,7 +80,11 @@ namespace Microsoft.Coyote.Tasks
         /// </summary>
         /// <returns>True if the call returned because the caller reacquired the lock for the specified
         /// object. This method does not return if the lock is not reacquired.</returns>
-        public virtual bool Wait() => SystemMonitor.Wait(this.SyncObject);
+        public virtual bool Wait()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return SystemMonitor.Wait(this.SyncObject);
+        }
 
         /// <summary>
         /// Releases the lock on an object and blocks the current thread until it reacquires
@@ -82,7 +95,11 @@ namespace Microsoft.Coyote.Tasks
         /// <returns>True if the lock was reacquired before the specified time elapsed; false if the
         /// lock was reacquired after the specified time elapsed. The method does not return
         /// until the lock is reacquired.</returns>
-        public virtual bool Wait(int millisecondsTimeout) => SystemMonitor.Wait(this.SyncObject, millisecondsTimeout);
+        public virtual bool Wait(int millisecondsTimeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return SystemMonitor.Wait(this.SyncObject, millisecondsTimeout);
+        }
 
         /// <summary>
         /// Releases the lock on an object and blocks the current thread until it reacquires
@@ -94,13 +111,19 @@ namespace Microsoft.Coyote.Tasks
         /// <returns>True if the lock was reacquired before the specified time elapsed; false if the
         /// lock was reacquired after the specified time elapsed. The method does not return
         /// until the lock is reacquired.</returns>
-        public virtual bool Wait(TimeSpan timeout) => SystemMonitor.Wait(this.SyncObject, timeout);
+        public virtual bool Wait(TimeSpan timeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return SystemMonitor.Wait(this.SyncObject, timeout);
+        }
 
         /// <summary>
         /// Releases resources used by the synchronized block.
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+
             if (disposing && this.IsLockTaken)
             {
                 SystemMonitor.Exit(this.SyncObject);

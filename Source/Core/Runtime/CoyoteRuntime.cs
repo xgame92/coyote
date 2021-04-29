@@ -72,7 +72,14 @@ namespace Microsoft.Coyote.Runtime
         /// If true, the program execution is controlled by the runtime to
         /// explore interleavings and sources of nondeterminism, else false.
         /// </summary>
-        internal static bool IsExecutionControlled => ExecutionControlledUseCount > 0;
+        internal static bool IsExecutionControlled
+        {
+            get
+            {
+                Current.InjectDelayDuringFuzzing();
+                return ExecutionControlledUseCount > 0;
+            }
+        }
 
         /// <summary>
         /// Count of controlled execution runtimes that have been used in this process.
@@ -159,6 +166,11 @@ namespace Microsoft.Coyote.Runtime
         /// Associated with the bug report is an optional unhandled exception.
         /// </summary>
         private Exception UnhandledException;
+
+        /// <summary>
+        /// Boolean variable to prevent delay overlap.
+        /// </summary>
+        private bool DelapOverlap = false;
 
         /// <summary>
         /// The operation scheduling policy used by the runtime.
@@ -1462,6 +1474,11 @@ namespace Microsoft.Coyote.Runtime
                     }
                 }
 
+                if (this.Scheduler == null)
+                {
+                    return;
+                }
+
                 int? taskId = Task.CurrentId;
 
                 // TODO: figure out if this check is still needed.
@@ -1582,13 +1599,29 @@ namespace Microsoft.Coyote.Runtime
                 // Choose the next delay to inject.
                 int next = this.GetNondeterministicDelay((int)this.Configuration.TimeoutDelay);
 
-                IO.Debug.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms.", Task.CurrentId, next);
-
-                if (!this.Configuration.IsStressTestingEnabled)
+                if (next != 0 && !this.Configuration.IsStressTestingEnabled && !this.DelapOverlap)
                 {
+                    this.DelapOverlap = true;
+
+                    this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", Task.CurrentId, next, this.Scheduler.GetDescription());
                     Thread.Sleep(next);
+
+                    this.DelapOverlap = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Delays the operation during delay fuzzing.
+        /// </summary>
+        internal bool InjectDelayDuringFuzzing()
+        {
+            if (this.SchedulingPolicy is SchedulingPolicy.Fuzzing)
+            {
+                this.DelayOperation();
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1676,9 +1709,6 @@ namespace Microsoft.Coyote.Runtime
         /// </summary>
         internal int GetNondeterministicDelay(int maxValue)
         {
-            this.Assert(this.SyncObject != null, "this.SYncObject is null");
-            this.Assert(this.Configuration != null, "this.Configuration is null");
-
             lock (this.SyncObject)
             {
                 // Checks if the scheduling steps bound has been reached.

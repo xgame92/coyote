@@ -93,6 +93,7 @@ namespace Microsoft.Coyote.Runtime
             else if (this.SchedulingPolicy is SchedulingPolicy.Fuzzing)
             {
                 this.Strategy = FuzzingStrategy.Create(configuration, this.ValueGenerator);
+                this.Configuration.SchedulingStrategy = this.Strategy.GetDescription();
             }
         }
 

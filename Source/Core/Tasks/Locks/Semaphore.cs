@@ -41,7 +41,11 @@ namespace Microsoft.Coyote.Tasks
         /// <summary>
         /// Blocks the current task until it can enter the semaphore.
         /// </summary>
-        public virtual void Wait() => this.Instance.Wait();
+        public virtual void Wait()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            this.Instance.Wait();
+        }
 
         /// <summary>
         /// Blocks the current task until it can enter the semaphore, using a <see cref="TimeSpan"/>
@@ -53,7 +57,11 @@ namespace Microsoft.Coyote.Tasks
         /// 0 milliseconds to test the wait handle and return immediately.
         /// </param>
         /// <returns>True if the current task successfully entered the semaphore, else false.</returns>
-        public virtual bool Wait(TimeSpan timeout) => this.Instance.Wait(timeout);
+        public virtual bool Wait(TimeSpan timeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.Wait(timeout);
+        }
 
         /// <summary>
         /// Blocks the current task until it can enter the semaphore, using a 32-bit signed integer
@@ -64,13 +72,21 @@ namespace Microsoft.Coyote.Tasks
         /// or zero to test the state of the wait handle and return immediately.
         /// </param>
         /// <returns>True if the current task successfully entered the semaphore, else false.</returns>
-        public virtual bool Wait(int millisecondsTimeout) => this.Instance.Wait(millisecondsTimeout);
+        public virtual bool Wait(int millisecondsTimeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.Wait(millisecondsTimeout);
+        }
 
         /// <summary>
         /// Blocks the current task until it can enter the semaphore, while observing a <see cref="CancellationToken"/>.
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
-        public virtual void Wait(CancellationToken cancellationToken) => this.Instance.Wait(cancellationToken);
+        public virtual void Wait(CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            this.Instance.Wait(cancellationToken);
+        }
 
         /// <summary>
         /// Blocks the current task until it can enter the semaphore, using a <see cref="TimeSpan"/>
@@ -83,8 +99,11 @@ namespace Microsoft.Coyote.Tasks
         /// </param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
         /// <returns>True if the current task successfully entered the semaphore, else false.</returns>
-        public virtual bool Wait(TimeSpan timeout, CancellationToken cancellationToken) =>
-            this.Instance.Wait(timeout, cancellationToken);
+        public virtual bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.Wait(timeout, cancellationToken);
+        }
 
         /// <summary>
         /// Blocks the current task until it can enter the semaphore, using a 32-bit signed integer
@@ -96,14 +115,21 @@ namespace Microsoft.Coyote.Tasks
         /// </param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
         /// <returns>True if the current task successfully entered the semaphore, else false.</returns>
-        public virtual bool Wait(int millisecondsTimeout, CancellationToken cancellationToken) =>
-            this.Instance.Wait(millisecondsTimeout, cancellationToken);
+        public virtual bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.Wait(millisecondsTimeout, cancellationToken);
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore.
         /// </summary>
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
-        public virtual Task WaitAsync() => this.Instance.WaitAsync().WrapInControlledTask();
+        public virtual Task WaitAsync()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync().WrapInControlledTask();
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore, using a <see cref="TimeSpan"/>
@@ -118,7 +144,11 @@ namespace Microsoft.Coyote.Tasks
         /// A task that will complete with a result of true if the current thread successfully entered
         /// the semaphore, otherwise with a result of false.
         /// </returns>
-        public virtual Task<bool> WaitAsync(TimeSpan timeout) => this.Instance.WaitAsync(timeout).WrapInControlledTask();
+        public virtual Task<bool> WaitAsync(TimeSpan timeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync(timeout).WrapInControlledTask();
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore, using a 32-bit signed integer
@@ -132,16 +162,22 @@ namespace Microsoft.Coyote.Tasks
         /// A task that will complete with a result of true if the current thread successfully entered
         /// the semaphore, otherwise with a result of false.
         /// </returns>
-        public virtual Task<bool> WaitAsync(int millisecondsTimeout) =>
-            this.Instance.WaitAsync(millisecondsTimeout).WrapInControlledTask();
+        public virtual Task<bool> WaitAsync(int millisecondsTimeout)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync(millisecondsTimeout).WrapInControlledTask();
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore, while observing a <see cref="CancellationToken"/>.
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
-        public virtual Task WaitAsync(CancellationToken cancellationToken) =>
-            this.Instance.WaitAsync(cancellationToken).WrapInControlledTask();
+        public virtual Task WaitAsync(CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync(cancellationToken).WrapInControlledTask();
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore, using a <see cref="TimeSpan"/>
@@ -157,8 +193,11 @@ namespace Microsoft.Coyote.Tasks
         /// A task that will complete with a result of true if the current thread successfully entered
         /// the semaphore, otherwise with a result of false.
         /// </returns>
-        public virtual Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
-            this.Instance.WaitAsync(timeout, cancellationToken).WrapInControlledTask();
+        public virtual Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync(timeout, cancellationToken).WrapInControlledTask();
+        }
 
         /// <summary>
         /// Asynchronously waits to enter the semaphore, using a 32-bit signed integer
@@ -173,13 +212,20 @@ namespace Microsoft.Coyote.Tasks
         /// A task that will complete with a result of true if the current thread successfully entered
         /// the semaphore, otherwise with a result of false.
         /// </returns>
-        public virtual Task<bool> WaitAsync(int millisecondsTimeout, CancellationToken cancellationToken) =>
-            this.Instance.WaitAsync(millisecondsTimeout, cancellationToken).WrapInControlledTask();
+        public virtual Task<bool> WaitAsync(int millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            return this.Instance.WaitAsync(millisecondsTimeout, cancellationToken).WrapInControlledTask();
+        }
 
         /// <summary>
         /// Releases the semaphore.
         /// </summary>
-        public virtual void Release() => this.Instance.Release();
+        public virtual void Release()
+        {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+            this.Instance.Release();
+        }
 
         /// <summary>
         /// Releases resources used by the semaphore.
@@ -191,6 +237,7 @@ namespace Microsoft.Coyote.Tasks
                 return;
             }
 
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             this.Instance?.Dispose();
         }
 

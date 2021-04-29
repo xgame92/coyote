@@ -47,6 +47,8 @@ namespace Microsoft.Coyote.Tasks
         /// </summary>
         public virtual async Task<Releaser> AcquireAsync()
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+
             TCS awaiter;
             lock (this.Awaiters)
             {
@@ -75,6 +77,8 @@ namespace Microsoft.Coyote.Tasks
         /// </summary>
         protected virtual void Release()
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+
             TCS awaiter = null;
             lock (this.Awaiters)
             {
@@ -109,6 +113,7 @@ namespace Microsoft.Coyote.Tasks
             /// </summary>
             internal Releaser(AsyncLock asyncLock)
             {
+                CoyoteRuntime.Current.InjectDelayDuringFuzzing();
                 this.AsyncLock = asyncLock;
             }
 
