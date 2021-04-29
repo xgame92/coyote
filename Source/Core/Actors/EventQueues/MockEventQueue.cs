@@ -162,7 +162,7 @@ namespace Microsoft.Coyote.Actors.Mocks
             {
                 // There is no default event handler installed, so do not return an event.
                 this.IsEventHandlerRunning = false;
-                return (DequeueStatus.NotAvailable, null, null, null);
+                return (DequeueStatus.Unavailable, null, null, null);
             }
 
             // TODO: check op-id of default event.
@@ -319,7 +319,7 @@ namespace Microsoft.Coyote.Actors.Mocks
             bool result = this.Owner.IsDefaultHandlerInstalled();
             if (result)
             {
-                this.Owner.Context.Runtime.ScheduleNextOperation();
+                this.Owner.Context.Runtime.ScheduleNextOperation(Runtime.AsyncOperationType.Default);
             }
 
             return result;

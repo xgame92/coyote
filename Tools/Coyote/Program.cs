@@ -222,26 +222,8 @@ namespace Microsoft.Coyote
                     Console.WriteLine($". Rewriting the assemblies specified in {configuration.RewritingOptionsPath}");
                     config.PlatformVersion = configuration.PlatformVersion;
 
-                    // allow command line options to override the json file.
-                    if (!string.IsNullOrEmpty(options.StrongNameKeyFile))
-                    {
-                        config.StrongNameKeyFile = options.StrongNameKeyFile;
-                    }
-
-                    if (options.IsRewritingDependencies)
-                    {
-                        config.IsRewritingDependencies = options.IsRewritingDependencies;
-                    }
-
-                    if (options.IsRewritingThreads)
-                    {
-                        config.IsRewritingThreads = options.IsRewritingThreads;
-                    }
-
-                    if (options.IsRewritingUnitTests)
-                    {
-                        config.IsRewritingUnitTests = options.IsRewritingUnitTests;
-                    }
+                    // Allow command line options to override the JSON configuration file options.
+                    config.Merge(options);
                 }
 
                 RewritingEngine.Run(configuration, config);
@@ -390,6 +372,8 @@ namespace Microsoft.Coyote
             return "net5.0";
 #elif NET48
             return "net48";
+#elif NET462
+            return "net462";
 #elif NETSTANDARD2_1
             return "netstandard2.1";
 #elif NETSTANDARD2_0

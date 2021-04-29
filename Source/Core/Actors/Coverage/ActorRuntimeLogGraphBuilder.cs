@@ -156,6 +156,33 @@ namespace Microsoft.Coyote.Actors.Coverage
         }
 
         /// <inheritdoc/>
+        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
+        {
+            lock (this.Inbox)
+            {
+                // We used the inbox to store raised event, but it should be the first one handled since
+                // raised events are highest priority.
+                string resolvedId = this.GetResolveActorId(id?.Name, id?.Type);
+                lock (this.Inbox)
+                {
+                    if (this.Inbox.TryGetValue(resolvedId, out List<EventInfo> inbox))
+                    {
+                        string eventName = e.GetType().FullName;
+                        for (int i = inbox.Count - 1; i >= 0; i--)
+                        {
+                            EventInfo info = inbox[i];
+                            if (info.Event == eventName)
+                            {
+                                this.Dequeued[id] = info;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc/>
         public void OnEnqueueEvent(ActorId id, Event e)
         {
         }
@@ -311,30 +338,8 @@ namespace Microsoft.Coyote.Actors.Coverage
         }
 
         /// <inheritdoc/>
-        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
+        public void OnEventHandlerTerminated(ActorId id, string stateName, DequeueStatus dequeueStatus)
         {
-            lock (this.Inbox)
-            {
-                // We used the inbox to store raised event, but it should be the first one handled since
-                // raised events are highest priority.
-                string resolvedId = this.GetResolveActorId(id?.Name, id?.Type);
-                lock (this.Inbox)
-                {
-                    if (this.Inbox.TryGetValue(resolvedId, out List<EventInfo> inbox))
-                    {
-                        string eventName = e.GetType().FullName;
-                        for (int i = inbox.Count - 1; i >= 0; i--)
-                        {
-                            EventInfo info = inbox[i];
-                            if (info.Event == eventName)
-                            {
-                                this.Dequeued[id] = info;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         /// <inheritdoc/>

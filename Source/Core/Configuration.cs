@@ -473,6 +473,17 @@ namespace Microsoft.Coyote
         }
 
         /// <summary>
+        /// Updates the configuration to use the reinforcement learning (RL) scheduling strategy
+        /// during systematic testing.
+        /// </summary>
+        public Configuration WithRLStrategy()
+        {
+            this.SchedulingStrategy = "rl";
+            this.IsProgramStateHashingEnabled = true;
+            return this;
+        }
+
+        /// <summary>
         /// Updates the configuration to use the dfs scheduling strategy during systematic testing.
         /// </summary>
         internal Configuration WithDFSStrategy()
@@ -730,6 +741,8 @@ namespace Microsoft.Coyote
             return "net5.0";
 #elif NET48
             return "net48";
+#elif NET462
+            return "net462";
 #elif NETSTANDARD2_1
             return "netstandard2.1";
 #elif NETSTANDARD2_0

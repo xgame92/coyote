@@ -40,6 +40,10 @@ namespace Microsoft.Coyote.Tests.Common.Runtime
         {
         }
 
+        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
+        {
+        }
+
         public void OnEnqueueEvent(ActorId id, Event e)
         {
         }
@@ -81,11 +85,11 @@ namespace Microsoft.Coyote.Tests.Common.Runtime
         {
         }
 
-        public void OnHalt(ActorId id, int inboxSize)
+        public void OnEventHandlerTerminated(ActorId id, string stateName, DequeueStatus dequeueStatus)
         {
         }
 
-        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
+        public void OnHalt(ActorId id, int inboxSize)
         {
         }
 

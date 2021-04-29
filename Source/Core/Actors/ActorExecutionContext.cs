@@ -519,6 +519,11 @@ namespace Microsoft.Coyote.Actors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal virtual void LogHandleRaisedEvent(Actor actor, Event e)
         {
+            if (this.Configuration.IsVerbose)
+            {
+                string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : default;
+                this.LogWriter.LogHandleRaisedEvent(actor.Id, stateName, e);
+            }
         }
 
         /// <summary>
@@ -572,6 +577,19 @@ namespace Microsoft.Coyote.Actors
                 {
                     this.LogWriter.LogWaitEvent(actor.Id, stateName, eventWaitTypesArray);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Logs that the event handler of the specified actor terminated.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal virtual void LogEventHandlerTerminated(Actor actor, DequeueStatus dequeueStatus)
+        {
+            if (this.Configuration.IsVerbose)
+            {
+                string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : default;
+                this.LogWriter.LogEventHandlerTerminated(actor.Id, stateName, dequeueStatus);
             }
         }
 
@@ -653,14 +671,6 @@ namespace Microsoft.Coyote.Actors
 
             return result;
         }
-
-        /// <summary>
-        /// Returns the current hashed state of the actors.
-        /// </summary>
-        /// <remarks>
-        /// The hash is updated in each execution step.
-        /// </remarks>
-        internal virtual int GetHashedActorState() => 0;
 
         /// <summary>
         /// Returns the program counter of the specified actor.
@@ -916,7 +926,7 @@ namespace Microsoft.Coyote.Actors
 
                 // Using ulong.MaxValue because a Create operation cannot specify
                 // the id of its target, because the id does not exist yet.
-                this.Runtime.ScheduleNextOperation();
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Create);
                 this.ResetProgramCounter(creator);
 
                 if (id is null)
@@ -1046,7 +1056,7 @@ namespace Microsoft.Coyote.Actors
                     "Cannot send event '{0}' to actor id '{1}' that is not bound to an actor instance.",
                     e.GetType().FullName, targetId.Value);
 
-                this.Runtime.ScheduleNextOperation();
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Send);
                 this.ResetProgramCounter(sender as StateMachine);
 
                 // If no group is provided we default to passing along the group from the sender.
@@ -1152,7 +1162,7 @@ namespace Microsoft.Coyote.Actors
                         op.OnCompleted();
 
                         // The actor is inactive or halted, schedule the next enabled operation.
-                        this.Runtime.ScheduleNextOperation();
+                        this.Runtime.ScheduleNextOperation(AsyncOperationType.Stop);
                     }
                     catch (Exception ex)
                     {
@@ -1232,7 +1242,7 @@ namespace Microsoft.Coyote.Actors
                 {
                     // Skip the scheduling point, as this is the first dequeue of the event handler,
                     // to avoid unecessery context switches.
-                    this.Runtime.ScheduleNextOperation();
+                    this.Runtime.ScheduleNextOperation(AsyncOperationType.Receive);
                     this.ResetProgramCounter(actor);
                 }
 
@@ -1243,13 +1253,14 @@ namespace Microsoft.Coyote.Actors
             /// <inheritdoc/>
             internal override void LogDefaultEventDequeued(Actor actor)
             {
-                this.Runtime.ScheduleNextOperation();
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Receive);
                 this.ResetProgramCounter(actor);
             }
 
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal override void LogDefaultEventHandlerCheck(Actor actor) => this.Runtime.ScheduleNextOperation();
+            internal override void LogDefaultEventHandlerCheck(Actor actor) =>
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Default);
 
             /// <inheritdoc/>
             internal override void LogRaisedEvent(Actor actor, Event e, EventGroup eventGroup, EventInfo eventInfo)
@@ -1281,7 +1292,7 @@ namespace Microsoft.Coyote.Actors
             {
                 string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : null;
                 this.LogWriter.LogReceiveEvent(actor.Id, stateName, e, wasBlocked: false);
-                this.Runtime.ScheduleNextOperation();
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Receive);
                 this.ResetProgramCounter(actor);
             }
 
@@ -1299,8 +1310,15 @@ namespace Microsoft.Coyote.Actors
                     this.LogWriter.LogWaitEvent(actor.Id, stateName, eventWaitTypesArray);
                 }
 
-                this.Runtime.ScheduleNextOperation();
+                this.Runtime.ScheduleNextOperation(AsyncOperationType.Join);
                 this.ResetProgramCounter(actor);
+            }
+
+            /// <inheritdoc/>
+            internal override void LogEventHandlerTerminated(Actor actor, DequeueStatus dequeueStatus)
+            {
+                string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : null;
+                this.LogWriter.LogEventHandlerTerminated(actor.Id, stateName, dequeueStatus);
             }
 
             /// <inheritdoc/>
@@ -1335,30 +1353,6 @@ namespace Microsoft.Coyote.Actors
             {
                 string stateName = stateMachine.CurrentStateName;
                 this.LogWriter.LogExecuteAction(stateMachine.Id, stateName, stateName, action.Name);
-            }
-
-            /// <summary>
-            /// Returns the current hashed state of the actors.
-            /// </summary>
-            /// <remarks>
-            /// The hash is updated in each execution step.
-            /// </remarks>
-            internal override int GetHashedActorState()
-            {
-                unchecked
-                {
-                    int hash = 19;
-
-                    foreach (var operation in this.Runtime.GetRegisteredOperations().OrderBy(op => op.Id))
-                    {
-                        if (operation is ActorOperation actorOperation)
-                        {
-                            hash *= 31 + actorOperation.Actor.GetHashedState();
-                        }
-                    }
-
-                    return hash;
-                }
             }
 
             /// <inheritdoc/>

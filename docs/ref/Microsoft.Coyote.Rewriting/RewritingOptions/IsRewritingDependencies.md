@@ -1,6 +1,6 @@
 # RewritingOptions.IsRewritingDependencies property
 
-Whether to also rewrite dependent assemblies that are found in the same location.
+True if rewriting dependent assemblies that are found in the same location is enabled, else false.
 
 ```csharp
 public bool IsRewritingDependencies { get; set; }

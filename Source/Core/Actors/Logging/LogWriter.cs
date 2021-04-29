@@ -142,6 +142,23 @@ namespace Microsoft.Coyote.Actors
         }
 
         /// <summary>
+        /// Logs that the specified state machine handled a raised event.
+        /// </summary>
+        /// <param name="id">The id of the actor handling the event.</param>
+        /// <param name="stateName">The name of the current state.</param>
+        /// <param name="e">The event being handled.</param>
+        public void LogHandleRaisedEvent(ActorId id, string stateName, Event e)
+        {
+            if (this.Logs.Count > 0)
+            {
+                foreach (var log in this.Logs)
+                {
+                    log.OnHandleRaisedEvent(id, stateName, e);
+                }
+            }
+        }
+
+        /// <summary>
         /// Logs that the specified event is about to be enqueued to an actor.
         /// </summary>
         /// <param name="id">The id of the actor that the event is being enqueued to.</param>
@@ -346,18 +363,18 @@ namespace Microsoft.Coyote.Actors
         }
 
         /// <summary>
-        /// Logs that the specified state machine handled a raised event.
+        /// Logs that the event handler of the specified actor terminated.
         /// </summary>
-        /// <param name="id">The id of the actor handling the event.</param>
-        /// <param name="stateName">The name of the current state.</param>
-        /// <param name="e">The event being handled.</param>
-        public void LogHandleRaisedEvent(ActorId id, string stateName, Event e)
+        /// <param name="id">The id of the actor that the state will execute in.</param>
+        /// <param name="stateName">The state name, if the actor is a state machine and a state exists, else null.</param>
+        /// <param name="dequeueStatus">The status returned as the result of the last dequeue operation.</param>
+        public void LogEventHandlerTerminated(ActorId id, string stateName, DequeueStatus dequeueStatus)
         {
             if (this.Logs.Count > 0)
             {
                 foreach (var log in this.Logs)
                 {
-                    log.OnHandleRaisedEvent(id, stateName, e);
+                    log.OnEventHandlerTerminated(id, stateName, dequeueStatus);
                 }
             }
         }

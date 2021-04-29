@@ -62,6 +62,14 @@ namespace Microsoft.Coyote.Actors
         void OnRaiseEvent(ActorId id, string stateName, Event e);
 
         /// <summary>
+        /// Invoked when the specified actor handled a raised event.
+        /// </summary>
+        /// <param name="id">The id of the actor handling the event.</param>
+        /// <param name="stateName">The state name, if the actor is a state machine and a state exists, else null.</param>
+        /// <param name="e">The event being handled.</param>
+        void OnHandleRaisedEvent(ActorId id, string stateName, Event e);
+
+        /// <summary>
         /// Invoked when the specified event is about to be enqueued to an actor.
         /// </summary>
         /// <param name="id">The id of the actor that the event is being enqueued to.</param>
@@ -143,19 +151,19 @@ namespace Microsoft.Coyote.Actors
         void OnDefaultEventHandler(ActorId id, string stateName);
 
         /// <summary>
+        /// Invoked when the event handler of the specified actor terminated.
+        /// </summary>
+        /// <param name="id">The id of the actor with the handler that terminated.</param>
+        /// <param name="stateName">The state name, if the actor is a state machine and a state exists, else null.</param>
+        /// <param name="dequeueStatus">The status returned as the result of the last dequeue operation.</param>
+        void OnEventHandlerTerminated(ActorId id, string stateName, DequeueStatus dequeueStatus);
+
+        /// <summary>
         /// Invoked when the specified actor has been halted.
         /// </summary>
         /// <param name="id">The id of the actor that has been halted.</param>
         /// <param name="inboxSize">Approximate size of the inbox.</param>
         void OnHalt(ActorId id, int inboxSize);
-
-        /// <summary>
-        /// Invoked when the specified actor handled a raised event.
-        /// </summary>
-        /// <param name="id">The id of the actor handling the event.</param>
-        /// <param name="stateName">The state name, if the actor is a state machine and a state exists, else null.</param>
-        /// <param name="e">The event being handled.</param>
-        void OnHandleRaisedEvent(ActorId id, string stateName, Event e);
 
         /// <summary>
         /// Invoked when the specified event cannot be handled in the current state, its exit

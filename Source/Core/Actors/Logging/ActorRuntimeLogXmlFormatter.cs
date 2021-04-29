@@ -125,6 +125,10 @@ namespace Microsoft.Coyote.Actors
             this.Writer.WriteEndElement();
         }
 
+        public void OnEventHandlerTerminated(ActorId id, string stateName, DequeueStatus dequeueStatus)
+        {
+        }
+
         public void OnDequeueEvent(ActorId id, string stateName, Event e)
         {
             if (this.Closed)
@@ -241,14 +245,6 @@ namespace Microsoft.Coyote.Actors
             this.Writer.WriteEndElement();
         }
 
-        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
-        {
-            if (this.Closed)
-            {
-                return;
-            }
-        }
-
         public void OnPopState(ActorId id, string currentStateName, string restoredStateName)
         {
             if (this.Closed)
@@ -307,6 +303,14 @@ namespace Microsoft.Coyote.Actors
 
             this.Writer.WriteAttributeString("event", e.GetType().FullName);
             this.Writer.WriteEndElement();
+        }
+
+        public void OnHandleRaisedEvent(ActorId id, string stateName, Event e)
+        {
+            if (this.Closed)
+            {
+                return;
+            }
         }
 
         public void OnReceiveEvent(ActorId id, string stateName, Event e, bool wasBlocked)
