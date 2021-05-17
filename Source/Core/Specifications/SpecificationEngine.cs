@@ -34,6 +34,8 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         private readonly List<TaskLivenessMonitor> LivenessMonitors;
 
+        private readonly object SyncObj;
+
         /// <summary>
         /// List of safety and liveness state-machine monitors in the program.
         /// </summary>
@@ -55,6 +57,7 @@ namespace Microsoft.Coyote.Specifications
             this.StateMachineMonitors = new List<Monitor>();
             this.IsMonitoringEnabled = runtime.SchedulingPolicy != SchedulingPolicy.None ||
                 configuration.IsMonitoringEnabledInInProduction;
+            this.SyncObj = new object();
         }
 
         /// <summary>
@@ -65,11 +68,14 @@ namespace Microsoft.Coyote.Specifications
 #endif
         internal void MonitorTaskCompletion(Task task)
         {
-            if (this.Runtime.SchedulingPolicy is SchedulingPolicy.Systematic &&
-                task.Status != TaskStatus.RanToCompletion)
+            lock (this.SyncObj)
             {
-                var monitor = new TaskLivenessMonitor(task);
-                this.LivenessMonitors.Add(monitor);
+                if (this.Runtime.SchedulingPolicy is SchedulingPolicy.Systematic &&
+                task.Status != TaskStatus.RanToCompletion)
+                {
+                    var monitor = new TaskLivenessMonitor(task);
+                    this.LivenessMonitors.Add(monitor);
+                }
             }
         }
 
@@ -118,6 +124,7 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         internal void InvokeMonitor(Type type, Event e, string senderName, string senderType, string senderStateName)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             if (!this.IsMonitoringEnabled)
             {
                 return;
@@ -284,26 +291,29 @@ namespace Microsoft.Coyote.Specifications
 #endif
         internal void CheckLivenessErrors()
         {
-            foreach (var monitor in this.LivenessMonitors)
+            lock (this.SyncObj)
             {
-                if (!monitor.IsSatisfied)
+                foreach (var monitor in this.LivenessMonitors)
                 {
-                    string msg = string.Format(CultureInfo.InvariantCulture,
-                        "Found liveness bug at the end of program execution.\nThe stack trace is:\n{0}",
-                        GetStackTrace(monitor.StackTrace));
-                    this.Runtime.NotifyAssertionFailure(msg, killTasks: false, cancelExecution: false);
+                    if (!monitor.IsSatisfied)
+                    {
+                        string msg = string.Format(CultureInfo.InvariantCulture,
+                            "Found liveness bug at the end of program execution.\nThe stack trace is:\n{0}",
+                            GetStackTrace(monitor.StackTrace));
+                        this.Runtime.NotifyAssertionFailure(msg, killTasks: false, cancelExecution: false);
+                    }
                 }
-            }
 
-            // Checks if there is a state-machine monitor stuck in a hot state.
-            foreach (var monitor in this.StateMachineMonitors)
-            {
-                if (monitor.IsInHotState(out string stateName))
+                // Checks if there is a state-machine monitor stuck in a hot state.
+                foreach (var monitor in this.StateMachineMonitors)
                 {
-                    string msg = string.Format(CultureInfo.InvariantCulture,
-                        "{0} detected liveness bug in hot state '{1}' at the end of program execution.",
-                        monitor.GetType().FullName, stateName);
-                    this.Runtime.NotifyAssertionFailure(msg, killTasks: false, cancelExecution: false);
+                    if (monitor.IsInHotState(out string stateName) && this.Runtime.SchedulingPolicy != SchedulingPolicy.Fuzzing)
+                    {
+                        string msg = string.Format(CultureInfo.InvariantCulture,
+                            "{0} detected liveness bug in hot state '{1}' at the end of program execution.",
+                            monitor.GetType().FullName, stateName);
+                        this.Runtime.NotifyAssertionFailure(msg, killTasks: false, cancelExecution: false);
+                    }
                 }
             }
         }
@@ -313,23 +323,26 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         internal void CheckLivenessThresholdExceeded()
         {
-            foreach (var monitor in this.LivenessMonitors)
+            lock (this.SyncObj)
             {
-                if (monitor.IsLivenessThresholdExceeded(this.Configuration.LivenessTemperatureThreshold))
+                foreach (var monitor in this.LivenessMonitors)
                 {
-                    string msg = string.Format(CultureInfo.InvariantCulture,
-                        "Found potential liveness bug at the end of program execution.\nThe stack trace is:\n{0}",
-                        GetStackTrace(monitor.StackTrace));
-                    this.Runtime.NotifyAssertionFailure(msg);
+                    if (monitor.IsLivenessThresholdExceeded(this.Configuration.LivenessTemperatureThreshold))
+                    {
+                        string msg = string.Format(CultureInfo.InvariantCulture,
+                            "Found potential liveness bug at the end of program execution.\nThe stack trace is:\n{0}",
+                            GetStackTrace(monitor.StackTrace));
+                        this.Runtime.NotifyAssertionFailure(msg);
+                    }
                 }
-            }
 
-            foreach (var monitor in this.StateMachineMonitors)
-            {
-                if (monitor.IsLivenessThresholdExceeded(this.Configuration.LivenessTemperatureThreshold))
+                foreach (var monitor in this.StateMachineMonitors)
                 {
-                    string msg = $"{monitor.Name} detected potential liveness bug in hot state '{monitor.CurrentStateName}'.";
-                    this.Runtime.NotifyAssertionFailure(msg);
+                    if (monitor != null && monitor.IsLivenessThresholdExceeded(this.Configuration.LivenessTemperatureThreshold))
+                    {
+                        string msg = $"{monitor.Name} detected potential liveness bug in hot state '{monitor.CurrentStateName}'.";
+                        this.Runtime.NotifyAssertionFailure(msg);
+                    }
                 }
             }
         }
@@ -364,16 +377,19 @@ namespace Microsoft.Coyote.Specifications
 #endif
         internal int GetHashedMonitorState()
         {
-            unchecked
+            lock (this.SyncObj)
             {
-                int hash = 19;
-
-                foreach (var monitor in this.StateMachineMonitors)
+                unchecked
                 {
-                    hash = (hash * 397) + monitor.GetHashedState();
-                }
+                    int hash = 19;
 
-                return hash;
+                    foreach (var monitor in this.StateMachineMonitors)
+                    {
+                        hash = (hash * 397) + monitor.GetHashedState();
+                    }
+
+                    return hash;
+                }
             }
         }
 
@@ -382,10 +398,13 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         private void Dispose(bool disposing)
         {
-            if (disposing)
+            lock (this.SyncObj)
             {
-                this.LivenessMonitors.Clear();
-                this.StateMachineMonitors.Clear();
+                if (disposing)
+                {
+                    this.LivenessMonitors.Clear();
+                    this.StateMachineMonitors.Clear();
+                }
             }
         }
 

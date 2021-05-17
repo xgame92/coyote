@@ -143,7 +143,7 @@ namespace Microsoft.Coyote.Rewriting
             IList<string> ignoredAssemblies = null;
             IList<string> dependencySearchPaths = null;
             string strongNameKeyFile = null;
-            bool isDataRaceCheckingEnabled = false;
+            bool isDataRaceCheckingEnabled = true;
             bool isRewritingDependencies = false;
             bool isRewritingUnitTests = false;
             bool isRewritingThreads = false;

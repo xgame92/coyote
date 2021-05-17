@@ -47,7 +47,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.PriorityChangePoints = priorityChangePoint;
 
             this.CurrentStrategy = new RandomStrategy(random, maxDelays);
-            this.NextStrategy = Strategy.TorchRandom;
+            this.NextStrategy = Strategy.Random;
         }
 
         /// <inheritdoc/>

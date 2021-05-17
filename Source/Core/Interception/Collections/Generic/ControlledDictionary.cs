@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Coyote.Runtime;
 
 namespace Microsoft.Coyote.Interception
@@ -393,6 +394,8 @@ namespace Microsoft.Coyote.Interception
                     }
                     else if (runtime.SchedulingPolicy is SchedulingPolicy.Fuzzing)
                     {
+                        IO.Debug.WriteLine($"Checking data race, Task:{Task.CurrentId}");
+                        // Thread.Sleep(50);
                         runtime.DelayOperation();
                     }
 
@@ -409,6 +412,8 @@ namespace Microsoft.Coyote.Interception
                     }
                     else if (runtime.SchedulingPolicy is SchedulingPolicy.Fuzzing)
                     {
+                        IO.Debug.WriteLine($"Checking data race, Task:{Task.CurrentId}");
+                        // Thread.Sleep(50);
                         runtime.DelayOperation();
                     }
 

@@ -56,7 +56,7 @@ namespace Microsoft.Coyote.Runtime
                 CoyoteRuntime runtime = AsyncLocalInstance.Value;
                 if (runtime is null)
                 {
-                    if (IsExecutionControlled)
+                    if (ExecutionControlledUseCount > 0)
                     {
                         ThrowUncontrolledTaskException();
                     }
@@ -84,7 +84,7 @@ namespace Microsoft.Coyote.Runtime
         /// <summary>
         /// Count of controlled execution runtimes that have been used in this process.
         /// </summary>
-        private static int ExecutionControlledUseCount;
+        internal static int ExecutionControlledUseCount;
 
         /// <summary>
         /// The configuration used by the runtime.
@@ -171,6 +171,8 @@ namespace Microsoft.Coyote.Runtime
         /// Boolean variable to prevent delay overlap.
         /// </summary>
         private bool DelapOverlap = false;
+        private DateTime DelayStartTime = DateTime.UtcNow;
+        private int DelayAmount = 0;
 
         /// <summary>
         /// The operation scheduling policy used by the runtime.
@@ -345,6 +347,10 @@ namespace Microsoft.Coyote.Runtime
                         {
                             // Report the unhandled exception.
                             this.NotifyUnhandledException(ex, ex.Message, cancelExecution: false);
+                        }
+                        else
+                        {
+                            IO.Debug.WriteLine("Thrown NotifyUnhandledException");
                         }
                     }
                 });
@@ -1387,6 +1393,7 @@ namespace Microsoft.Coyote.Runtime
             if (this.SchedulingPolicy is SchedulingPolicy.Fuzzing)
             {
                 AssignAsyncControlFlowRuntime(this);
+                this.InjectDelayDuringFuzzing();
             }
         }
 
@@ -1603,16 +1610,32 @@ namespace Microsoft.Coyote.Runtime
                 // Choose the next delay to inject.
                 int next = this.GetNondeterministicDelay((int)this.Configuration.TimeoutDelay);
 
-                if (next != 0 && !this.Configuration.IsStressTestingEnabled && !this.DelapOverlap)
+                if (next > 0 && Task.CurrentId != null && !this.Configuration.IsStressTestingEnabled && !this.DelapOverlap)
                 {
                     this.DelapOverlap = true;
 
                     this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", Task.CurrentId, next, this.Scheduler.GetDescription());
+
+                    this.DelayStartTime = DateTime.UtcNow;
+                    this.DelayAmount = next;
                     Thread.Sleep(next);
 
                     this.DelapOverlap = false;
                 }
+                else if (next > 0 && Task.CurrentId != null && !this.Configuration.IsStressTestingEnabled && this.DelapOverlap)
+                {
+                    int delayExhausted = (int)DateTime.UtcNow.Subtract(this.DelayStartTime).TotalMilliseconds;
+                    int delayLeft = this.DelayAmount - delayExhausted;
+
+                    if (delayLeft > 0)
+                    {
+                        this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", Task.CurrentId, delayLeft, this.Scheduler.GetDescription());
+                        Thread.Sleep(delayLeft);
+                    }
+                }
             }
+
+            this.Scheduler.ShouldBlockThread(this.Logger);
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Coyote.Testing.Fuzzing
@@ -34,7 +35,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <summary>
         /// Steps after which we should inject long delays.
         /// </summary>
-        private double MaxStepCountPerIteration;
+        private int MaxStepCountPerIteration;
 
         /// <summary>
         /// Number of iterations.
@@ -46,6 +47,8 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// </summary>
         protected int GlobalStepCount;
 
+        protected List<int> PriorityChangePoints;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FairPCTStrategy"/> class.
         /// </summary>
@@ -56,8 +59,9 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.MaxStepCountPerIteration = 0;
             this.GlobalStepCount = 0;
             this.StepCountPerTask = new Dictionary<int, int>();
-            this.PriorityChangePoint = 2;
+            this.PriorityChangePoint = 1;
             this.IterationCount = 0;
+            this.PriorityChangePoints = new List<int>();
         }
 
         /// <inheritdoc/>
@@ -71,21 +75,41 @@ namespace Microsoft.Coyote.Testing.Fuzzing
 
             this.GlobalStepCount = 0;
             this.StepCountPerTask.Clear();
+            this.PriorityChangePoints.Clear();
             this.IterationCount++;
 
-            // After every 100 iterations, increment the priority change point depth.
-            if (this.IterationCount % 100 == 0)
+            // After every 1000 iterations, increment the priority change point depth.
+            if (this.IterationCount % 1000 == 0)
             {
-                this.PriorityChangePoint = this.PriorityChangePoint + 2;
+                this.PriorityChangePoint = this.PriorityChangePoint + 1;
 
                 // Make sure that Priority chnage point depth is always less than max StepCount Per iteration.
                 if (this.MaxStepCountPerIteration != 0 && this.PriorityChangePoint > this.MaxStepCountPerIteration)
                 {
-                    this.PriorityChangePoint = 2;
+                    this.PriorityChangePoint = 1;
                 }
             }
 
+            foreach (int point in this.Shuffle(Enumerable.Range(0, this.MaxStepCountPerIteration)).Take(this.PriorityChangePoint))
+            {
+                this.PriorityChangePoints.Add(point);
+            }
+
             return true;
+        }
+
+        private IList<int> Shuffle(IEnumerable<int> range)
+        {
+            var result = new List<int>(range);
+            for (int idx = result.Count - 1; idx >= 1; idx--)
+            {
+                int point = this.RandomValueGenerator.Next(result.Count);
+                int temp = result[idx];
+                result[idx] = result[point];
+                result[point] = temp;
+            }
+
+            return result;
         }
 
         /// <inheritdoc/>
@@ -97,8 +121,6 @@ namespace Microsoft.Coyote.Testing.Fuzzing
                 next = 0;
                 return true;
             }
-
-            this.GlobalStepCount++;
 
             // Fetch the step count per task, increment it and store again.
             if (this.StepCountPerTask.TryGetValue((int)currentTaskId, out int taskStepCount))
@@ -112,10 +134,19 @@ namespace Microsoft.Coyote.Testing.Fuzzing
 
             this.StepCountPerTask.Add((int)currentTaskId, ++taskStepCount);
 
-            // Inject long delays after every PriorityChangePoint steps.
-            if (taskStepCount % this.PriorityChangePoint == 0)
+            if (this.IterationCount == 1)
             {
-                next = 5 + this.RandomValueGenerator.Next(20);
+                this.GlobalStepCount = Math.Max(taskStepCount, this.GlobalStepCount);
+            }
+            else
+            {
+                this.GlobalStepCount++;
+            }
+
+            // Inject long delays after every PriorityChangePoint steps.
+            if (this.PriorityChangePoints.Contains(taskStepCount))
+            {
+                next = this.RandomValueGenerator.Next(10) * 50;
             }
             else
             {

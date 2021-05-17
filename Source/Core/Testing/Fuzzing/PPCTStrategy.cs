@@ -74,7 +74,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.StepCount++;
 
             // Reshuffle the probabilities after every (this.MaxSteps / this.PriorityChangePoints) steps.
-            if (this.StepCount % (this.MaxSteps / this.PriorityChangePoints) == 0)
+            if (this.StepCount % (this.MaxSteps / 100) == 0)
             {
                 this.LowPrioritySet.Clear();
                 this.HighPrioritySet.Clear();
@@ -101,7 +101,14 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             }
             else
             {
-                next = this.RandomValueGenerator.Next(50);
+                if (this.lowPriortityProbability > 0.4)
+                {
+                    next = this.RandomValueGenerator.Next(10) * 5;
+                }
+                else
+                {
+                    next = (this.RandomValueGenerator.Next(10) * 5) + 50;
+                }
             }
 
             return true;

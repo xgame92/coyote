@@ -164,6 +164,7 @@ namespace Microsoft.Coyote.Actors
         internal virtual ActorId CreateActor(ActorId id, Type type, string name, Event initialEvent, Actor creator, EventGroup eventGroup)
         {
             Actor actor = this.CreateActor(id, type, name, creator, eventGroup);
+
             if (actor is StateMachine)
             {
                 this.LogWriter.LogCreateStateMachine(actor.Id, creator?.Id.Name, creator?.Id.Type);
@@ -185,6 +186,7 @@ namespace Microsoft.Coyote.Actors
         internal virtual async Task<ActorId> CreateActorAndExecuteAsync(ActorId id, Type type, string name, Event initialEvent,
             Actor creator, EventGroup eventGroup)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             Actor actor = this.CreateActor(id, type, name, creator, eventGroup);
             if (actor is StateMachine)
             {
@@ -204,6 +206,7 @@ namespace Microsoft.Coyote.Actors
         /// </summary>
         internal virtual Actor CreateActor(ActorId id, Type type, string name, Actor creator, EventGroup eventGroup)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             if (!type.IsSubclassOf(typeof(Actor)))
             {
                 this.Assert(false, "Type '{0}' is not an actor.", type.FullName);
@@ -260,6 +263,7 @@ namespace Microsoft.Coyote.Actors
         /// </summary>
         internal virtual void SendEvent(ActorId targetId, Event e, Actor sender, EventGroup eventGroup, SendOptions options)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             EnqueueStatus enqueueStatus = this.EnqueueEvent(targetId, e, sender, eventGroup, out Actor target);
             if (enqueueStatus is EnqueueStatus.EventHandlerNotRunning)
             {
@@ -274,6 +278,7 @@ namespace Microsoft.Coyote.Actors
         internal virtual async Task<bool> SendEventAndExecuteAsync(ActorId targetId, Event e, Actor sender,
             EventGroup eventGroup, SendOptions options)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             EnqueueStatus enqueueStatus = this.EnqueueEvent(targetId, e, sender, eventGroup, out Actor target);
             if (enqueueStatus is EnqueueStatus.EventHandlerNotRunning)
             {
@@ -427,6 +432,7 @@ namespace Microsoft.Coyote.Actors
         /// </summary>
         internal virtual bool GetNondeterministicBooleanChoice(int maxValue, string callerName, string callerType)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             bool result = false;
             if (this.ValueGenerator.Next(maxValue) is 0)
             {
@@ -477,6 +483,7 @@ namespace Microsoft.Coyote.Actors
         /// </summary>
         internal virtual void LogDequeuedEvent(Actor actor, Event e, EventInfo eventInfo, bool isFreshDequeue)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             if (this.Configuration.IsVerbose)
             {
                 string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : default;
@@ -490,6 +497,7 @@ namespace Microsoft.Coyote.Actors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal virtual void LogDefaultEventDequeued(Actor actor)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
         }
 
         /// <summary>
@@ -499,6 +507,7 @@ namespace Microsoft.Coyote.Actors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal virtual void LogDefaultEventHandlerCheck(Actor actor)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
         }
 
         /// <summary>
@@ -565,6 +574,7 @@ namespace Microsoft.Coyote.Actors
         /// </summary>
         internal virtual void LogWaitEvent(Actor actor, IEnumerable<Type> eventTypes)
         {
+            this.Runtime.InjectDelayDuringFuzzing();
             if (this.Configuration.IsVerbose)
             {
                 string stateName = actor is StateMachine stateMachine ? stateMachine.CurrentStateName : default;
@@ -992,6 +1002,7 @@ namespace Microsoft.Coyote.Actors
             /// </summary>
             internal override void SendEvent(ActorId targetId, Event e, Actor sender, EventGroup eventGroup, SendOptions options)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 if (e is null)
                 {
                     string message = sender != null ?
@@ -1025,6 +1036,7 @@ namespace Microsoft.Coyote.Actors
             internal override async Task<bool> SendEventAndExecuteAsync(ActorId targetId, Event e, Actor sender,
                 EventGroup eventGroup, SendOptions options)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 this.Assert(sender is StateMachine, "Only an actor can call 'SendEventAndExecuteAsync': avoid " +
                     "calling it directly from the test method; instead call it through a test driver actor.");
                 this.Assert(e != null, "{0} is sending a null event.", sender.Id);
@@ -1179,6 +1191,7 @@ namespace Microsoft.Coyote.Actors
             /// </summary>
             internal override IActorTimer CreateActorTimer(TimerInfo info, Actor owner)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 var id = this.CreateActorId(typeof(MockStateMachineTimer));
                 this.CreateActor(id, typeof(MockStateMachineTimer), new TimerSetupEvent(info, owner, this.Configuration.TimeoutDelay));
                 return this.Runtime.GetOperationWithId<ActorOperation>(id.Value).Actor as MockStateMachineTimer;
@@ -1187,6 +1200,7 @@ namespace Microsoft.Coyote.Actors
             /// <inheritdoc/>
             public override EventGroup GetCurrentEventGroup(ActorId currentActorId)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 var callerOp = this.Runtime.GetExecutingOperation<ActorOperation>();
                 this.Assert(callerOp != null && currentActorId == callerOp.Actor.Id,
                     "Trying to access the event group id of {0}, which is not the currently executing actor.",
@@ -1199,6 +1213,7 @@ namespace Microsoft.Coyote.Actors
             /// </summary>
             internal override bool GetNondeterministicBooleanChoice(int maxValue, string callerName, string callerType)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 var caller = this.Runtime.GetExecutingOperation<ActorOperation>()?.Actor;
                 if (caller is Actor callerActor)
                 {
@@ -1215,6 +1230,7 @@ namespace Microsoft.Coyote.Actors
             /// </summary>
             internal override int GetNondeterministicIntegerChoice(int maxValue, string callerName, string callerType)
             {
+                this.Runtime.InjectDelayDuringFuzzing();
                 var caller = this.Runtime.GetExecutingOperation<ActorOperation>()?.Actor;
                 if (caller is Actor callerActor)
                 {

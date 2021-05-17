@@ -91,7 +91,7 @@ namespace Microsoft.Coyote.Rewriting
         {
             MethodReference newMethod = this.RewriteMethodReference(method, this.Module);
             if (method.FullName == newMethod.FullName ||
-                !this.TryResolve(method, out MethodDefinition _))
+                !this.TryResolve(method, out MethodDefinition _) || method.Name.Contains(".ctor"))
             {
                 // There is nothing to rewrite, return the original instruction.
                 return instruction;

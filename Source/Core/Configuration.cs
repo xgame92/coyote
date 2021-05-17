@@ -374,10 +374,10 @@ namespace Microsoft.Coyote
             this.TestMethodName = string.Empty;
 
             this.SchedulingStrategy = "random";
-            this.TestingIterations = 1;
+            this.TestingIterations = 100;
             this.TestingTimeout = 0;
             this.RandomGeneratorSeed = null;
-            this.IncrementalSchedulingSeed = false;
+            this.IncrementalSchedulingSeed = true;
             this.IsRelaxedControlledTestingEnabled = false;
             this.IsConcurrencyFuzzingEnabled = false;
             this.IsStressTestingEnabled = false;
@@ -393,9 +393,9 @@ namespace Microsoft.Coyote
             this.TestingSchedulerIpAddress = null;
             this.TestingProcessId = 0;
             this.ConsiderDepthBoundHitAsBug = false;
-            this.StrategyBound = 0;
+            this.StrategyBound = 15;
             this.TimeoutDelay = 10;
-            this.DeadlockTimeout = 5000;
+            this.DeadlockTimeout = 100000;
             this.SafetyPrefixBound = 0;
             this.LivenessTemperatureThreshold = 50000;
             this.UserExplicitlySetLivenessTemperatureThreshold = false;
@@ -551,6 +551,7 @@ namespace Microsoft.Coyote
         public Configuration WithConcurrencyFuzzingEnabled(bool isEnabled = true)
         {
             this.IsConcurrencyFuzzingEnabled = isEnabled;
+            this.IncrementalSchedulingSeed = true;
             return this;
         }
 

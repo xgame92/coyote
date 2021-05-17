@@ -542,6 +542,8 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         private void GotoState(Type s, string onExitActionName, Event e)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
+
             // The monitor performs the on exit statements of the current state.
             this.ExecuteCurrentStateOnExit(onExitActionName, e);
 
@@ -588,6 +590,8 @@ namespace Microsoft.Coyote.Specifications
         {
             if (this.ActiveState.IsHot && threshold > 0)
             {
+                Debug.WriteLine($"<LivenessMonitorDebug> Checking LivenessTemprature. Current Temprature {this.LivenessTemperature}, Threshold {threshold}");
+
                 this.LivenessTemperature++;
                 if (this.LivenessTemperature > threshold)
                 {
@@ -943,7 +947,7 @@ namespace Microsoft.Coyote.Specifications
         /// </summary>
         private void LogMonitorError(Monitor monitor)
         {
-            if (this.Configuration.IsVerbose || CoyoteRuntime.IsExecutionControlled)
+            if (this.Configuration.IsVerbose || CoyoteRuntime.ExecutionControlledUseCount > 0)
             {
                 string monitorState = monitor.CurrentStateName;
                 this.LogWriter.LogMonitorError(monitor.GetType().FullName, monitorState, monitor.GetHotState());

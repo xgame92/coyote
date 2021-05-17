@@ -95,6 +95,7 @@ You can provide one or two unsigned integer values", typeof(uint)).IsMultiValue 
             experimentalGroup.DependsOn = new CommandLineArgumentDependency() { Name = "command", Value = "test" };
             experimentalGroup.AddArgument("relaxed-testing", null, "Relax systematic testing to allow for uncontrolled concurrency", typeof(bool));
             experimentalGroup.AddArgument("concurrency-fuzzing", null, "Enable concurrency fuzzing", typeof(bool));
+            experimentalGroup.AddArgument("delay-fuzzing-strategy", null, "Choose one of the following delay fuzzing strategy: portfolio, ppct, cointoss, random, torch-random, rapid-context-switch, one-stop-one-go, low-delay-percentage", typeof(string));
 
             // Hidden options (for debugging or experimentation only).
             var hiddenGroup = this.Parser.GetOrCreateGroup("hiddenGroup", "Hidden Options");
@@ -259,6 +260,9 @@ You can provide one or two unsigned integer values", typeof(uint)).IsMultiValue 
                 case "sch-fairpct":
                     configuration.SchedulingStrategy = option.LongName.Substring(4);
                     configuration.StrategyBound = (int)(uint)option.Value;
+                    break;
+                case "delay-fuzzing-strategy":
+                    configuration.SchedulingStrategy = (string)option.Value;
                     break;
                 case "sch-rl":
                     configuration.SchedulingStrategy = option.LongName.Substring(4);
@@ -472,7 +476,8 @@ You can provide one or two unsigned integer values", typeof(uint)).IsMultiValue 
                 configuration.SchedulingStrategy != "fairpct" &&
                 configuration.SchedulingStrategy != "probabilistic" &&
                 configuration.SchedulingStrategy != "rl" &&
-                configuration.SchedulingStrategy != "dfs")
+                configuration.SchedulingStrategy != "dfs" &&
+                !configuration.IsConcurrencyFuzzingEnabled)
             {
                 Error.ReportAndExit("Please provide a scheduling strategy (see --sch* options)");
             }

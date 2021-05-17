@@ -667,6 +667,7 @@ namespace Microsoft.Coyote.Interception
                     }
                     else if (runtime.SchedulingPolicy is SchedulingPolicy.Fuzzing)
                     {
+                        // Thread.Sleep(50);
                         runtime.DelayOperation();
                     }
 
@@ -683,6 +684,7 @@ namespace Microsoft.Coyote.Interception
                     }
                     else if (runtime.SchedulingPolicy is SchedulingPolicy.Fuzzing)
                     {
+                        // Thread.Sleep(50);
                         runtime.DelayOperation();
                     }
 

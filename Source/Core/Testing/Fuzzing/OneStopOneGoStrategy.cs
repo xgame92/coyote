@@ -51,7 +51,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.RandomValueGenerator = random;
             this.MaxSteps = maxDelays;
             this.PriorityChangePoints = priorityChangePoints;
-            this.strategy = Strategy.OneGo;
+            this.strategy = Strategy.OneStop;
         }
 
         /// <inheritdoc/>
@@ -61,7 +61,6 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.LowPrioritySet.Clear();
             this.HighPrioritySet.Clear();
             this.strategy = this.RandomValueGenerator.NextDouble() < 0.5 ? Strategy.OneStop : Strategy.OneGo;
-
             return true;
         }
 
@@ -78,11 +77,13 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             this.StepCount++;
 
             // Reshuffle the probabilities after every (this.MaxSteps / this.PriorityChangePoints) steps.
+            /*
             if (this.StepCount % (this.MaxSteps / this.PriorityChangePoints) == 0)
             {
                 this.LowPrioritySet.Clear();
                 this.HighPrioritySet.Clear();
             }
+            */
 
             // Stop all tasks except one.
             if (this.strategy == Strategy.OneGo)
@@ -125,7 +126,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             }
             else
             {
-                next = this.RandomValueGenerator.Next(40);
+                next = 100;
             }
 
             return true;

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -30,7 +31,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <summary>
         /// Dictionary to keep a track of delay per thread.
         /// </summary>
-        private readonly Dictionary<int, int> PerTaskDelay;
+        private readonly ConcurrentDictionary<int, int> PerTaskDelay;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CoinTossStrategy"/> class.
@@ -39,7 +40,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         {
             this.RandomValueGenerator = random;
             this.MaxSteps = maxDelays;
-            this.PerTaskDelay = new Dictionary<int, int>();
+            this.PerTaskDelay = new ConcurrentDictionary<int, int>(5, 10000);
         }
 
         /// <inheritdoc/>
@@ -80,7 +81,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
                     retval = delay == 0 ? 1 : delay * 2;
                 }
 
-                this.PerTaskDelay.Remove((int)currentTaskId);
+                this.PerTaskDelay.TryRemove((int)currentTaskId, out delay);
             }
 
             // Make sure that the delay value is always < 500ms.
@@ -90,7 +91,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             }
 
             // Save this delay.
-            this.PerTaskDelay.Add((int)currentTaskId, retval);
+            this.PerTaskDelay.TryAdd((int)currentTaskId, retval);
 
             next = retval;
             return true;

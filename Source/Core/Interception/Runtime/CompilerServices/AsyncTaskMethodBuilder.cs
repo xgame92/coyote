@@ -40,6 +40,7 @@ namespace Microsoft.Coyote.Interception
             [DebuggerHidden]
             get
             {
+                this.Runtime?.InjectDelayDuringFuzzing();
                 IO.Debug.WriteLine("<AsyncBuilder> Creating builder task '{0}' from task '{1}' (isCompleted {2}).",
                     this.MethodBuilder.Task.Id, Task.CurrentId, this.MethodBuilder.Task.IsCompleted);
                 this.Runtime?.CheckExecutingOperationIsControlled();
@@ -55,6 +56,7 @@ namespace Microsoft.Coyote.Interception
         {
             this.Runtime = runtime;
             this.MethodBuilder = default;
+            this.Runtime?.InjectDelayDuringFuzzing();
         }
 
         /// <summary>
@@ -71,6 +73,7 @@ namespace Microsoft.Coyote.Interception
         public void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
+            this.Runtime?.InjectDelayDuringFuzzing();
             IO.Debug.WriteLine("<AsyncBuilder> Start state machine from task '{0}'.", Task.CurrentId);
             this.Runtime?.CheckExecutingOperationIsControlled();
             this.Runtime?.OnAsyncTaskMethodBuilderStart();
@@ -88,6 +91,7 @@ namespace Microsoft.Coyote.Interception
         /// </summary>
         public void SetResult()
         {
+            this.Runtime?.InjectDelayDuringFuzzing();
             IO.Debug.WriteLine("<AsyncBuilder> Set result of task '{0}' from task '{1}'.",
                 this.MethodBuilder.Task.Id, Task.CurrentId);
             this.Runtime?.CheckExecutingOperationIsControlled();
@@ -99,6 +103,7 @@ namespace Microsoft.Coyote.Interception
         /// </summary>
         public void SetException(Exception exception)
         {
+            this.Runtime?.InjectDelayDuringFuzzing();
             this.Runtime?.OnAsyncTaskMethodBuilderSetException(exception);
             this.MethodBuilder.SetException(exception);
         }
@@ -153,6 +158,7 @@ namespace Microsoft.Coyote.Interception
             [DebuggerHidden]
             get
             {
+                this.Runtime?.InjectDelayDuringFuzzing();
                 IO.Debug.WriteLine("<AsyncBuilder> Creating builder task '{0}' from task '{1}' (isCompleted {2}).",
                     this.MethodBuilder.Task.Id, System.Threading.Tasks.Task.CurrentId, this.MethodBuilder.Task.IsCompleted);
                 this.Runtime?.CheckExecutingOperationIsControlled();
@@ -186,6 +192,7 @@ namespace Microsoft.Coyote.Interception
         public void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
+            this.Runtime?.InjectDelayDuringFuzzing();
             IO.Debug.WriteLine("<AsyncBuilder> Start state machine from task '{0}'.", System.Threading.Tasks.Task.CurrentId);
             this.Runtime?.CheckExecutingOperationIsControlled();
             this.Runtime?.OnAsyncTaskMethodBuilderStart();

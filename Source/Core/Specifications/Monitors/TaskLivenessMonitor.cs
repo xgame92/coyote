@@ -51,6 +51,8 @@ namespace Microsoft.Coyote.Specifications
         {
             if (!this.IsSatisfied && threshold > 0)
             {
+                IO.Debug.WriteLine($"<LivenessMonitorDebug> Checking LivenessTemprature. Current Temprature {this.LivenessTemperature}, Threshold {threshold}");
+
                 this.LivenessTemperature++;
                 if (this.LivenessTemperature > threshold)
                 {

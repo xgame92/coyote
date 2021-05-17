@@ -107,6 +107,7 @@ namespace Microsoft.Coyote.Actors
         /// <param name="initialEvent">Optional event used for initialization.</param>
         internal override async Task InitializeAsync(Event initialEvent)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             // Invoke the custom initializer, if there is one.
             await this.InvokeUserCallbackAsync(UserCallbackType.OnInitialize, initialEvent);
 
@@ -132,6 +133,7 @@ namespace Microsoft.Coyote.Actors
         /// <param name="e">The event to raise.</param>
         protected void RaiseEvent(Event e)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             this.Assert(this.CurrentStatus is Status.Active, "{0} invoked RaiseEvent while halting.", this.Id);
             this.Assert(e != null, "{0} is raising a null event.", this.Id);
             this.CheckDanglingTransition();
@@ -182,6 +184,7 @@ namespace Microsoft.Coyote.Actors
         /// <param name="state">Type of the state.</param>
         protected void RaiseGotoStateEvent(Type state)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             this.Assert(this.CurrentStatus is Status.Active, "{0} invoked GotoState while halting.", this.Id);
             this.Assert(StateTypeCache[this.GetType()].Any(val => val.DeclaringType.Equals(state.DeclaringType) && val.Name.Equals(state.Name)),
                 "{0} is trying to transition to non-existing state '{1}'.", this.Id, state.Name);
@@ -235,6 +238,7 @@ namespace Microsoft.Coyote.Actors
         /// <param name="state">Type of the state.</param>
         protected void RaisePushStateEvent(Type state)
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             this.Assert(this.CurrentStatus is Status.Active, "{0} invoked PushState while halting.", this.Id);
             this.Assert(StateTypeCache[this.GetType()].Any(val => val.DeclaringType.Equals(state.DeclaringType) && val.Name.Equals(state.Name)),
                 "{0} is trying to transition to non-existing state '{1}'.", this.Id, state.Name);
@@ -258,6 +262,7 @@ namespace Microsoft.Coyote.Actors
         /// </remarks>
         protected void RaisePopStateEvent()
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             this.Assert(this.CurrentStatus is Status.Active, "{0} invoked PopState while halting.", this.Id);
             this.CheckDanglingTransition();
             this.PendingTransition = new Transition(Transition.Type.PopState, null, default);
@@ -277,6 +282,7 @@ namespace Microsoft.Coyote.Actors
         /// </remarks>
         protected new void RaiseHaltEvent()
         {
+            CoyoteRuntime.Current.InjectDelayDuringFuzzing();
             base.RaiseHaltEvent();
             this.CheckDanglingTransition();
             this.PendingTransition = new Transition(Transition.Type.Halt, null, default);

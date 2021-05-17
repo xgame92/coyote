@@ -110,8 +110,14 @@ namespace Microsoft.Coyote.Runtime
             if (this.SchedulingPolicy is SchedulingPolicy.Systematic &&
                 this.Configuration.IsLivenessCheckingEnabled)
             {
-                this.Strategy = new TemperatureCheckingStrategy(this.Configuration, specificationEngine,
+                this.Strategy = new Testing.Systematic.TemperatureCheckingStrategy(this.Configuration, specificationEngine,
                     this.Strategy as SystematicStrategy);
+            }
+            else if (this.SchedulingPolicy is SchedulingPolicy.Fuzzing &&
+                this.Configuration.IsLivenessCheckingEnabled)
+            {
+                this.Strategy = new Testing.Fuzzing.TemperatureCheckingStrategy(this.Configuration, specificationEngine,
+                    this.Strategy as FuzzingStrategy);
             }
         }
 
@@ -170,6 +176,14 @@ namespace Microsoft.Coyote.Runtime
             {
                 next = 0;
                 return true;
+            }
+        }
+
+        internal void ShouldBlockThread(IO.ILogger logger)
+        {
+            if (this.Strategy is FuzzingStrategy && this.Strategy is RapidContextSwitchStrategy)
+            {
+                (this.Strategy as RapidContextSwitchStrategy).ShouldBlockThread(logger);
             }
         }
 
