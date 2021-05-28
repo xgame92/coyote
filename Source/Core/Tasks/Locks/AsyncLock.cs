@@ -113,7 +113,6 @@ namespace Microsoft.Coyote.Tasks
             /// </summary>
             internal Releaser(AsyncLock asyncLock)
             {
-                CoyoteRuntime.Current.InjectDelayDuringFuzzing();
                 this.AsyncLock = asyncLock;
             }
 

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Threading;
 using Microsoft.Coyote.Specifications;
 
 namespace Microsoft.Coyote.Testing.Fuzzing

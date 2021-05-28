@@ -60,7 +60,7 @@ namespace Microsoft.Coyote.Tasks
         /// </summary>
         [DebuggerHidden]
         public static AsyncTaskMethodBuilder Create() =>
-            new AsyncTaskMethodBuilder(CoyoteRuntime.IsExecutionControlled ? CoyoteRuntime.Current : null);
+            new AsyncTaskMethodBuilder(CoyoteRuntime.ExecutionControlledUseCount > 0 ? CoyoteRuntime.Current : null);
 
         /// <summary>
         /// Begins running the builder with the associated state machine.
@@ -168,7 +168,7 @@ namespace Microsoft.Coyote.Tasks
 #pragma warning disable CA1000 // Do not declare static members on generic types
         [DebuggerHidden]
         public static AsyncTaskMethodBuilder<TResult> Create() =>
-            new AsyncTaskMethodBuilder<TResult>(CoyoteRuntime.IsExecutionControlled ? CoyoteRuntime.Current : null);
+            new AsyncTaskMethodBuilder<TResult>(CoyoteRuntime.ExecutionControlledUseCount > 0 ? CoyoteRuntime.Current : null);
 #pragma warning restore CA1000 // Do not declare static members on generic types
 
         /// <summary>

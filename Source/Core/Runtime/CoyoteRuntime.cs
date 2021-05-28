@@ -47,6 +47,12 @@ namespace Microsoft.Coyote.Runtime
             new AsyncLocal<AsyncOperation>(OnAsyncLocalExecutingOperationValueChanged);
 
         /// <summary>
+        /// Async local variable used to store the current Thread ID. It is helpfull during async/await where
+        /// Task.CurrentId can be NULL. Used during delay fuzzing.
+        /// </summary>
+        internal readonly AsyncLocal<int?> AsyncLocalParentTaskId = new AsyncLocal<int?>();
+
+        /// <summary>
         /// The runtime executing the current operation.
         /// </summary>
         internal static CoyoteRuntime Current
@@ -1393,7 +1399,6 @@ namespace Microsoft.Coyote.Runtime
             if (this.SchedulingPolicy is SchedulingPolicy.Fuzzing)
             {
                 AssignAsyncControlFlowRuntime(this);
-                this.InjectDelayDuringFuzzing();
             }
         }
 
@@ -1599,6 +1604,11 @@ namespace Microsoft.Coyote.Runtime
         /// </summary>
         internal void DelayOperation()
         {
+            if (Task.CurrentId != null && this.AsyncLocalParentTaskId.Value != Task.CurrentId)
+            {
+                this.AsyncLocalParentTaskId.Value = Task.CurrentId;
+            }
+
             lock (this.SyncObject)
             {
                 this.ThrowExecutionCanceledExceptionIfDetached();
@@ -1610,11 +1620,11 @@ namespace Microsoft.Coyote.Runtime
                 // Choose the next delay to inject.
                 int next = this.GetNondeterministicDelay((int)this.Configuration.TimeoutDelay);
 
-                if (next > 0 && Task.CurrentId != null && !this.Configuration.IsStressTestingEnabled && !this.DelapOverlap)
+                if (next > 0 && !this.Configuration.IsStressTestingEnabled && !this.DelapOverlap)
                 {
                     this.DelapOverlap = true;
 
-                    this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", Task.CurrentId, next, this.Scheduler.GetDescription());
+                    this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", this.AsyncLocalParentTaskId.Value, next, this.Scheduler.GetDescription());
 
                     this.DelayStartTime = DateTime.UtcNow;
                     this.DelayAmount = next;
@@ -1622,14 +1632,14 @@ namespace Microsoft.Coyote.Runtime
 
                     this.DelapOverlap = false;
                 }
-                else if (next > 0 && Task.CurrentId != null && !this.Configuration.IsStressTestingEnabled && this.DelapOverlap)
+                else if (next > 0 && !this.Configuration.IsStressTestingEnabled && this.DelapOverlap)
                 {
                     int delayExhausted = (int)DateTime.UtcNow.Subtract(this.DelayStartTime).TotalMilliseconds;
                     int delayLeft = this.DelayAmount - delayExhausted;
 
                     if (delayLeft > 0)
                     {
-                        this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", Task.CurrentId, delayLeft, this.Scheduler.GetDescription());
+                        this.Logger.WriteLine("<ScheduleDebug> Delaying the operation that executes on task '{0}' by {1}ms. CurrentStrategy={2}", this.AsyncLocalParentTaskId.Value, delayLeft, this.Scheduler.GetDescription());
                         Thread.Sleep(delayLeft);
                     }
                 }
@@ -1736,6 +1746,11 @@ namespace Microsoft.Coyote.Runtime
         /// </summary>
         internal int GetNondeterministicDelay(int maxValue)
         {
+            if (Task.CurrentId != null && this.AsyncLocalParentTaskId.Value != Task.CurrentId)
+            {
+                this.AsyncLocalParentTaskId.Value = Task.CurrentId;
+            }
+
             lock (this.SyncObject)
             {
                 // Checks if the scheduling steps bound has been reached.

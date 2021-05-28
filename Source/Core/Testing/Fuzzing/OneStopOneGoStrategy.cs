@@ -67,12 +67,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool GetNextDelay(int maxValue, out int next)
         {
-            int? currentTaskId = Task.CurrentId;
-            if (currentTaskId == null)
-            {
-                next = 0;
-                return true;
-            }
+            int currentTaskId = (int)Runtime.CoyoteRuntime.Current.AsyncLocalParentTaskId.Value;
 
             this.StepCount++;
 
@@ -89,38 +84,38 @@ namespace Microsoft.Coyote.Testing.Fuzzing
             if (this.strategy == Strategy.OneGo)
             {
                 // If this task is not assigned to any Low/High priority group.
-                if (!this.LowPrioritySet.Contains((int)currentTaskId) && !this.HighPrioritySet.Contains((int)currentTaskId))
+                if (!this.LowPrioritySet.Contains(currentTaskId) && !this.HighPrioritySet.Contains(currentTaskId))
                 {
                     // Randomly assign a Task to long/short delay group.
                     if (this.RandomValueGenerator.NextDouble() < 0.5 && this.HighPrioritySet.Count == 0)
                     {
-                        this.HighPrioritySet.Add((int)currentTaskId);
+                        this.HighPrioritySet.Add(currentTaskId);
                     }
                     else
                     {
-                        this.LowPrioritySet.Add((int)currentTaskId);
+                        this.LowPrioritySet.Add(currentTaskId);
                     }
                 }
             }
             else if (this.strategy == Strategy.OneStop)
             {
                 // If this task is not assigned to any Low/High priority group.
-                if (!this.LowPrioritySet.Contains((int)currentTaskId) && !this.HighPrioritySet.Contains((int)currentTaskId))
+                if (!this.LowPrioritySet.Contains(currentTaskId) && !this.HighPrioritySet.Contains(currentTaskId))
                 {
                     // Randomly assign a Task to long/short delay group.
                     if (this.RandomValueGenerator.NextDouble() < 0.5 && this.LowPrioritySet.Count == 0)
                     {
-                        this.LowPrioritySet.Add((int)currentTaskId);
+                        this.LowPrioritySet.Add(currentTaskId);
                     }
                     else
                     {
-                        this.HighPrioritySet.Add((int)currentTaskId);
+                        this.HighPrioritySet.Add(currentTaskId);
                     }
                 }
             }
 
             // If this Task lies in the HighPrioritySet, we will return a delay of 1ms else 10ms.
-            if (this.HighPrioritySet.Contains((int)currentTaskId))
+            if (this.HighPrioritySet.Contains(currentTaskId))
             {
                 next = 0;
             }

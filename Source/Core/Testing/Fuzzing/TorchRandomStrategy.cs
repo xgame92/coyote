@@ -53,12 +53,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool GetNextDelay(int maxValue, out int next)
         {
-            int? currentTaskId = Task.CurrentId;
-            if (currentTaskId == null)
-            {
-                next = 0;
-                return true;
-            }
+            int currentTaskId = (int)Runtime.CoyoteRuntime.Current.AsyncLocalParentTaskId.Value;
 
             this.StepCount++;
 
@@ -69,7 +64,7 @@ namespace Microsoft.Coyote.Testing.Fuzzing
                 retval = this.RandomValueGenerator.Next(100);
             }
 
-            if (this.PerTaskTotalDelay.TryGetValue((int)currentTaskId, out int delay))
+            if (this.PerTaskTotalDelay.TryGetValue(currentTaskId, out int delay))
             {
                 // Max delay per thread.
                 if (delay > 5000)
@@ -78,12 +73,12 @@ namespace Microsoft.Coyote.Testing.Fuzzing
                 }
 
                 // Update the total delay per thread.
-                this.PerTaskTotalDelay.Remove((int)currentTaskId);
-                this.PerTaskTotalDelay.Add((int)currentTaskId, delay + retval);
+                this.PerTaskTotalDelay.Remove(currentTaskId);
+                this.PerTaskTotalDelay.Add(currentTaskId, delay + retval);
             }
             else
             {
-                this.PerTaskTotalDelay.Add((int)currentTaskId, retval);
+                this.PerTaskTotalDelay.Add(currentTaskId, retval);
             }
 
             next = retval;

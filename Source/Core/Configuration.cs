@@ -545,13 +545,15 @@ namespace Microsoft.Coyote
         /// Updates the configuration with concurrency fuzzing enabled or disabled.
         /// </summary>
         /// <param name="isEnabled">If true, then concurrency fuzzing is enabled.</param>
+        /// <param name="st">Concurrency fuzzing strategy.</param>
         /// <remarks>
         /// This is an experimental feature.
         /// </remarks>
-        public Configuration WithConcurrencyFuzzingEnabled(bool isEnabled = true)
+        public Configuration WithConcurrencyFuzzingEnabled(bool isEnabled = true, string st = "torch-random")
         {
             this.IsConcurrencyFuzzingEnabled = isEnabled;
             this.IncrementalSchedulingSeed = true;
+            this.SchedulingStrategy = st;
             return this;
         }
 

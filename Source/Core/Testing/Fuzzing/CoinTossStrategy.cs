@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -56,17 +57,12 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool GetNextDelay(int maxValue, out int next)
         {
-            int? currentTaskId = Task.CurrentId;
-            if (currentTaskId == null)
-            {
-                next = 0;
-                return true;
-            }
+            int currentTaskId = (int)Runtime.CoyoteRuntime.Current.AsyncLocalParentTaskId.Value;
 
             this.StepCount++;
 
             int retval = 0;
-            if (!this.PerTaskDelay.TryGetValue((int)currentTaskId, out int delay))
+            if (!this.PerTaskDelay.TryGetValue(currentTaskId, out int delay))
             {
                 retval = 0;
                 if (this.CoinToss())
@@ -81,17 +77,17 @@ namespace Microsoft.Coyote.Testing.Fuzzing
                     retval = delay == 0 ? 1 : delay * 2;
                 }
 
-                this.PerTaskDelay.TryRemove((int)currentTaskId, out delay);
+                this.PerTaskDelay.TryRemove(currentTaskId, out delay);
             }
 
             // Make sure that the delay value is always < 500ms.
-            if (retval >= 500)
+            if (retval >= 100)
             {
                 retval = 1;
             }
 
             // Save this delay.
-            this.PerTaskDelay.TryAdd((int)currentTaskId, retval);
+            this.PerTaskDelay.TryAdd(currentTaskId, retval);
 
             next = retval;
             return true;

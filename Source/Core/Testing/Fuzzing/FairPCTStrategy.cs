@@ -115,24 +115,19 @@ namespace Microsoft.Coyote.Testing.Fuzzing
         /// <inheritdoc/>
         internal override bool GetNextDelay(int maxValue, out int next)
         {
-            int? currentTaskId = Task.CurrentId;
-            if (currentTaskId == null)
-            {
-                next = 0;
-                return true;
-            }
+            int currentTaskId = (int)Runtime.CoyoteRuntime.Current.AsyncLocalParentTaskId.Value;
 
             // Fetch the step count per task, increment it and store again.
-            if (this.StepCountPerTask.TryGetValue((int)currentTaskId, out int taskStepCount))
+            if (this.StepCountPerTask.TryGetValue(currentTaskId, out int taskStepCount))
             {
-                this.StepCountPerTask.Remove((int)currentTaskId);
+                this.StepCountPerTask.Remove(currentTaskId);
             }
             else
             {
                 taskStepCount = 0;
             }
 
-            this.StepCountPerTask.Add((int)currentTaskId, ++taskStepCount);
+            this.StepCountPerTask.Add(currentTaskId, ++taskStepCount);
 
             if (this.IterationCount == 1)
             {
